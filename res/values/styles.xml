@@ -1,0 +1,25 @@
+<resources>
+
+    <style name="AppTheme" parent="android:Theme.Light" />
+
+    <style name="dialog_wait" parent="@android:style/Theme.Dialog">
+        <item name="android:backgroundDimEnabled">false</item>
+    </style>
+
+    <color name="focused">#ff5500</color>
+    <color name="selected">#ff00ff</color>
+    <color name="unfocused">#cccccccc</color>
+    <color name="pressed">#ffff22ff</color>
+    <color name="white">#ffffff</color>
+    <color name="blue">#42a1fb</color>
+    <color name="gray">#f2f2f2</color>
+    <color name="black">#000000</color>
+    <color name="lightblue">#3685e4</color>
+    <color name="navigate_text_color">#474848</color>
+    <dimen name="navigate_text_size">15dp</dimen>
+    <color name="navigate_line_green">#5ba461</color>
+    <color name="lightwhite">#e3e3e3</color>
+    <color name="lightblack">#474848</color>
+    <color name="lightgreen">#c5eec2</color>
+
+</resources>
