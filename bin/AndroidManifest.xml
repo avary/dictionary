@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.viewpagertest"
+    package="com.zhan_dui.dictionary"
     android:versionCode="1"
     android:versionName="1.0" >
 
@@ -25,7 +25,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".OnlineDictionaryActivity"
+            android:name="com.zhan_dui.dictionary.OnlineDictionaryActivity"
             android:label="@string/menu_online_dictionary"
             android:theme="@android:style/Theme.NoTitleBar" >
             <intent-filter>
