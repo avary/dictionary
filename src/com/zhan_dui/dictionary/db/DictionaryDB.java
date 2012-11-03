@@ -48,7 +48,6 @@ public class DictionaryDB extends SQLiteOpenHelper {
 	private final Context context;
 	public final static int DB_VERSION = 2;
 	public final static String DB_NAME = "dictionary.sqlite";
-	public final static String DB_BASE_DIC_COVER_NAME = "dictionary.mp3";
 	public final static String DB_BASE_DIC = "dictionary_word.sqlite";
 
 	public final static String DB_DICTIONARY_LIST_NAME = "dictionary_list";
@@ -61,7 +60,7 @@ public class DictionaryDB extends SQLiteOpenHelper {
 
 	@Override
 	public void onCreate(SQLiteDatabase sqLiteDatabase) {
-		String createSql = "create table dictionary_list (_id INTEGER PRIMARY KEY AUTOINCREMENT,dictionary_name text,dictionary_size text,dictionary_url text,dictionary_xml text,dictionary_save_name text,dictionary_downloaded INTEGER default 0,dictionary_xml_downloaded INTEGER default 0);";
+		String createSql = "create table dictionary_list (_id INTEGER PRIMARY KEY AUTOINCREMENT,dictionary_name text,dictionary_size text,dictionary_url text,dictionary_save_name text,dictionary_downloaded INTEGER default 0);";
 		sqLiteDatabase.execSQL(createSql);
 	}
 
@@ -71,103 +70,14 @@ public class DictionaryDB extends SQLiteOpenHelper {
 	}
 
 	/**
-	 * 从assets中拷贝文件到database目录
+	 * 在基础词库中查询一个单词的ID
 	 * 
-	 * @param databaseName
-	 *            数据库名字
-	 * @throws IOException
-	 *             文件未找到，或无法打开
+	 * @param sqLiteDatabase
+	 *            数据库链接
+	 * @param word
+	 *            单词
+	 * @return 返回一个int代表单词的id
 	 */
-	public static void copyDatabaseFromAssetsThread(Context context,
-			String assetname, String savename, Handler handler)
-			throws IOException {
-		new CopyFromAssetsThread(context, assetname, savename, handler).start();
-	}
-
-	/**
-	 * 拷贝线程
-	 * 
-	 * @author xuanqinanhai
-	 * 
-	 */
-	static class CopyFromAssetsThread extends Thread {
-
-		private String assetfilename;
-		private Handler handler;
-		private Context context;
-		private String savename;
-
-		public CopyFromAssetsThread(Context context, String assetfilename,
-				String savename, Handler handler) {
-			this.assetfilename = assetfilename;
-			this.handler = handler;
-			this.context = context;
-			this.savename = savename;
-		}
-
-		@Override
-		public void run() {
-			super.run();
-			try {
-				InputStream inputStream;
-				inputStream = context.getAssets().open(assetfilename);
-				int total = inputStream.available();
-				String target = DB_PATH + savename;
-				File file = new File(DB_PATH);
-
-				if (file.exists() == false) {
-					file.mkdir();
-				}
-
-				file = new File(target);
-				if (file.exists() == false)
-					file.createNewFile();
-
-				OutputStream outputStream = new FileOutputStream(target);
-				BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(
-						outputStream, 8192);
-
-				byte[] buffer = new byte[10240];
-				int copyed = 0;
-				int length = 0;
-				Message msg = Message.obtain(handler, Constants.MOVE_START);
-				msg.arg1 = total;
-				msg.sendToTarget();
-				int counter = 0;
-				while ((length = inputStream.read(buffer)) > 0) {
-					bufferedOutputStream.write(buffer, 0, length);
-					copyed += length;
-					msg = Message.obtain(handler, Constants.MOVING, copyed,
-							total);
-					msg.sendToTarget();
-
-					if (counter++ == 0)
-						try {
-							sleep(1000);
-						} catch (InterruptedException e) {
-							e.printStackTrace();
-						}
-
-					try {
-						sleep(15);
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-				}
-				msg = Message.obtain(handler, Constants.MOVE_END);
-				msg.sendToTarget();
-				outputStream.flush();
-				outputStream.close();
-				inputStream.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-				Message msg = Message.obtain(handler, Constants.MOVE_ERROR);
-				msg.sendToTarget();
-			}
-
-		}
-	}
-
 	private int queryWordId(SQLiteDatabase sqLiteDatabase, String word) {
 		String[] tableStrings = { "id" };
 		Cursor cursor = sqLiteDatabase.query("word", tableStrings, "word='"
@@ -206,8 +116,8 @@ public class DictionaryDB extends SQLiteOpenHelper {
 	 * @throws SAXException
 	 *             SAX转换异常
 	 */
-	public View queryWord(Context context, String word, String xmlfile)
-			throws ParserConfigurationException, SAXException {
+	public View queryWord(Context context, String word, String sqliteFileName,
+			String xmlfile) throws ParserConfigurationException, SAXException {
 
 		SAXParserFactory saxParserFactory = SAXParserFactory.newInstance();
 		SAXParser saxParser = saxParserFactory.newSAXParser();
@@ -226,8 +136,8 @@ public class DictionaryDB extends SQLiteOpenHelper {
 		dictionaryParseInfomation.toString();
 		SQLiteDatabase sqLiteDatabase = SQLiteDatabase.openDatabase(
 				Environment.getExternalStorageDirectory() + "/"
-						+ Constants.SAVE_DIRECTORY + "/collins.sqlite", null,
-				SQLiteDatabase.OPEN_READONLY);
+						+ Constants.SAVE_DIRECTORY + "/" + sqliteFileName,
+				null, SQLiteDatabase.OPEN_READONLY);
 		String table = dictionaryParseInfomation.table;
 		String[] columns = (String[]) (dictionaryParseInfomation.queryWords
 				.toArray(new String[0]));

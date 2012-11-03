@@ -39,12 +39,6 @@ public class OnlineDictionaryActivity extends Activity {
 		onlineInfoHandler = new OnlineInfoHandler();
 		setContentView(R.layout.online_dictionary);
 
-		SharedPreferences sharedPreferences = this.getSharedPreferences(
-				Config.PREFER_NAME, Context.MODE_PRIVATE);
-		int last_time = sharedPreferences.getInt(
-				"last_refresh_online_dictionary", 0);
-		int cur_time = (int) (System.currentTimeMillis());
-
 		dictionaryList = (ListView) findViewById(R.id.list_online_dictionary);
 		dictionaryList.setSelector(R.drawable.item_dictionary_selector);
 
@@ -141,7 +135,7 @@ public class OnlineDictionaryActivity extends Activity {
 		 */
 		public void ParseJson(String json) throws JSONException {
 			JSONArray jsonArray = new JSONArray(json);
-			String name, size, url, save_name, xml_url;
+			String name, size, url, save_name;
 			JSONObject jsonObject;
 			DictionaryDB dictionaryDB = new DictionaryDB(
 					OnlineDictionaryActivity.this, DictionaryDB.DB_NAME, null,
@@ -152,21 +146,17 @@ public class OnlineDictionaryActivity extends Activity {
 				size = jsonObject.getString("dictionary_size");
 				url = jsonObject.getString("dictionary_url");
 				save_name = jsonObject.getString("dictionary_save_name");
-				xml_url = jsonObject.getString("dictionary_xml");
 				String checkIfExsit = "select * from dictionary_list where `dictionary_name`='"
 						+ name + "'";
 				SQLiteDatabase sqLiteDatabase = dictionaryDB
 						.getWritableDatabase();
 				Cursor cursor = sqLiteDatabase.rawQuery(checkIfExsit, null);
 				if (cursor.getCount() == 0) {
-
 					ContentValues contentValues = new ContentValues();
 					contentValues.put("dictionary_name", name);
 					contentValues.put("dictionary_size", size);
 					contentValues.put("dictionary_url", url);
-					contentValues.put("dictionary_xml", xml_url);
 					contentValues.put("dictionary_save_name", save_name);
-
 					sqLiteDatabase.insert("dictionary_list", null,
 							contentValues);
 				}

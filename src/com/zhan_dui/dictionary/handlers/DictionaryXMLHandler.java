@@ -6,7 +6,6 @@ import org.xml.sax.helpers.DefaultHandler;
 
 import com.zhan_dui.dictionary.db.DictionaryParseInfomation;
 
-
 import android.util.Log;
 
 public class DictionaryXMLHandler extends DefaultHandler {

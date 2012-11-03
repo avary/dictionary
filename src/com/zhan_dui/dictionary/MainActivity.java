@@ -42,7 +42,6 @@ import com.zhan_dui.dictionary.utils.UnzipHandler;
 public class MainActivity extends Activity {
 
 	private ViewPagerAdapter myAdapter = new ViewPagerAdapter();
-	private Config config;
 	private Button btn_query_word, btn_words_list;
 	private View line_btn_query_word, line_btn_words_list;
 	private final int line_ids[] = { R.id.line_btn_query_word,
@@ -52,7 +51,6 @@ public class MainActivity extends Activity {
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		config = new Config(getApplicationContext());
 		context = this;
 		setContentView(R.layout.activity_main);
 
@@ -64,18 +62,6 @@ public class MainActivity extends Activity {
 		query_word_view.findViewById(R.id.search).setOnClickListener(
 				new QueryWordButtonListener());
 		View view2 = LayoutInflater.from(this).inflate(R.layout.view2, null);
-		view2.findViewById(R.id.button1).setOnClickListener(
-				new OnClickListener() {
-
-					@Override
-					public void onClick(View v) {
-						new Thread() {
-							public void run() {
-								// db.queryWordId("make");
-							};
-						}.start();
-					}
-				});
 
 		myAdapter.addPageView(query_word_view);
 		myAdapter.addPageView(view2);
@@ -108,12 +94,14 @@ public class MainActivity extends Activity {
 			}
 		});
 
-		//CheckIfFirst();
-		//CheckWordExist();
+		CheckWordExist();
 	}
 
+	/**
+	 * 检查基础词库是否存在，如果不存在，则将assets中的zip文件解压到sd卡的Constant.SAVE_DIRECTORY目录中
+	 */
 	private void CheckWordExist() {
-		File file = new File(Environment.getExternalStorageDirectory()
+		File file = new File(Environment.getExternalStorageDirectory() + "/"
 				+ Constants.SAVE_DIRECTORY + "/" + Constants.BASE_DICTIONARY);
 		if (file.exists() == false) {
 			try {
@@ -129,52 +117,8 @@ public class MainActivity extends Activity {
 	}
 
 	/**
-	 * 检查是否是第一次启动
+	 * 菜单按钮
 	 */
-	private void CheckIfFirst() {
-		int result = config.getIntPreference(Constants.PREF_FIRST);
-		result = 0;
-		if (result == 0) {
-			AlertDialog.Builder builder = new AlertDialog.Builder(this);
-			builder.setMessage(R.string.first_move_alert)
-					.setCancelable(false)
-					.setPositiveButton(R.string.move_start,
-							new DialogInterface.OnClickListener() {
-								public void onClick(DialogInterface dialog,
-										int id) {
-									try {
-										UnzipHandler unzipHandler = new UnzipHandler(
-												MainActivity.this);
-										InputStream inputStream = MainActivity.this
-												.getAssets().open(
-														"collins.sqlite.zip");
-										new UnzipFile(
-												unzipHandler,
-												inputStream,
-												Environment
-														.getExternalStorageDirectory()
-														+ "/dictionary/", true)
-												.start();
-
-										config.setPreference(
-												Constants.PREF_FIRST, 1);
-									} catch (IOException e) {
-										e.printStackTrace();
-									}
-								}
-							})
-					.setNegativeButton(R.string.cancel,
-							new DialogInterface.OnClickListener() {
-								public void onClick(DialogInterface dialog,
-										int id) {
-									dialog.cancel();
-								}
-							});
-			AlertDialog alert = builder.create();
-			alert.show();
-		}
-	}
-
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		getMenuInflater().inflate(R.menu.activity_main, menu);
@@ -197,7 +141,7 @@ public class MainActivity extends Activity {
 	}
 
 	/**
-	 * 搜索按钮
+	 * 搜索按钮按下的时候的监听器
 	 * 
 	 * @author xuanqinanhai
 	 * 
@@ -214,32 +158,24 @@ public class MainActivity extends Activity {
 				LinearLayout parentLayout = (LinearLayout) MainActivity.this
 						.findViewById(R.id.dictionary_meaning_content);
 				parentLayout.removeAllViewsInLayout();
-				// View view = db.queryWord(word);
-				// LinearLayout linearLayout = (LinearLayout) view;
-
-				// parentLayout.addView(linearLayout);
-				// db.close();
 				try {
 					LinearLayout linearLayout = (LinearLayout) db.queryWord(
-							MainActivity.this, word,
+							MainActivity.this, word, "collins.sqlite",
 							Environment.getExternalStorageDirectory() + "/"
 									+ Constants.SAVE_DIRECTORY
 									+ "/config-collins.xml");
 					parentLayout.addView(linearLayout);
 				} catch (ParserConfigurationException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				} catch (SAXException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}
 		}
-
 	}
 
 	/**
-	 * ViewPager滑动监听
+	 * ViewPager滑动监听，主要是改变底线的属性
 	 */
 	class ViewPagerScroolListener implements OnPageChangeListener {
 
@@ -263,6 +199,9 @@ public class MainActivity extends Activity {
 
 	}
 
+	/**
+	 * 文件移动时候的Handler
+	 */
 	@SuppressLint("HandlerLeak")
 	Handler MoveHandler = new Handler() {
 		private ProgressDialog progressDialog;
