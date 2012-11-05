@@ -1,7 +1,7 @@
 package com.zhan_dui.dictionary.utils;
 
 public class Constants {
-	public static final String ONLINE_DICTIONARY_LIST_URL = "http://1.miracle.duapp.com/dictionary_list_json.php";
+	public static final String ONLINE_DICTIONARY_LIST_URL = "http://dic.zhan-dui.com/json.php";
 
 	public static final int DOWNLOADING = 1;
 	public static final int DOWNLOAD_ERROR = -1;

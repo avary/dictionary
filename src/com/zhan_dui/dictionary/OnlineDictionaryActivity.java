@@ -1,10 +1,5 @@
 package com.zhan_dui.dictionary;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.net.URL;
-import java.net.URLConnection;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -12,21 +7,26 @@ import org.json.JSONObject;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.ContentValues;
-import android.content.Context;
-import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.util.Log;
 import android.widget.ListView;
 import android.widget.Toast;
 
 import com.zhan_dui.dictionary.adapters.OnlineListCursorAdapter;
 import com.zhan_dui.dictionary.db.DictionaryDB;
-import com.zhan_dui.dictionary.utils.Config;
 import com.zhan_dui.dictionary.utils.Constants;
+import com.zhan_dui.dictionary.utils.JsonGetter;
 
+/**
+ * 获取在线字典列表
+ * 
+ * @author xuanqinanhai
+ * 
+ */
 public class OnlineDictionaryActivity extends Activity {
 
 	private OnlineInfoHandler onlineInfoHandler;
@@ -59,25 +59,10 @@ public class OnlineDictionaryActivity extends Activity {
 			super.handleMessage(msg);
 			switch (msg.what) {
 			case Constants.DOWNLOAD_ERROR:
+				Toast.makeText(getApplicationContext(),
+						getString(R.string.progress_error), Toast.LENGTH_LONG)
+						.show();
 				if (progressDialog != null) {
-					Toast.makeText(getApplicationContext(),
-							getString(R.string.progress_error),
-							Toast.LENGTH_LONG).show();
-					SQLiteDatabase sqLiteDatabase = new DictionaryDB(
-							OnlineDictionaryActivity.this,
-							DictionaryDB.DB_NAME, null, DictionaryDB.DB_VERSION)
-							.getReadableDatabase();
-					Cursor cursor = sqLiteDatabase.rawQuery(
-							"select * from dictionary_list", null);
-					startManagingCursor(cursor);
-					try {
-						OnlineListCursorAdapter onlineListCursorAdapter;
-						onlineListCursorAdapter = new OnlineListCursorAdapter(
-								OnlineDictionaryActivity.this, cursor);
-						dictionaryList.setAdapter(onlineListCursorAdapter);
-					} catch (JSONException e) {
-					}
-
 					progressDialog.dismiss();
 				}
 				break;
@@ -85,26 +70,21 @@ public class OnlineDictionaryActivity extends Activity {
 				if (progressDialog != null) {
 					progressDialog.dismiss();
 				}
+				SQLiteDatabase sqLiteDatabase = new DictionaryDB(
+						OnlineDictionaryActivity.this, DictionaryDB.DB_NAME,
+						null, DictionaryDB.DB_VERSION).getReadableDatabase();
+				Cursor cursor = sqLiteDatabase.rawQuery(
+						"select * from dictionary_list", null);
+				startManagingCursor(cursor);
+				OnlineListCursorAdapter onlineListCursorAdapter = new OnlineListCursorAdapter(
+						OnlineDictionaryActivity.this, cursor);
+				dictionaryList.setAdapter(onlineListCursorAdapter);
 				break;
 			case Constants.DOWNLOAD_SUCCESS:
 				if (progressDialog != null) {
 					Toast.makeText(OnlineDictionaryActivity.this,
 							getString(R.string.progress_success),
 							Toast.LENGTH_LONG).show();
-
-					try {
-						OnlineListCursorAdapter onlineListCursorAdapter = new OnlineListCursorAdapter(
-								OnlineDictionaryActivity.this, (Cursor) msg.obj);
-						dictionaryList.setAdapter(onlineListCursorAdapter);
-					} catch (JSONException e) {
-						e.printStackTrace();
-						Toast.makeText(OnlineDictionaryActivity.this,
-								getString(R.string.json_parse_error),
-								Toast.LENGTH_LONG).show();
-						finish();
-					} finally {
-						progressDialog.dismiss();
-					}
 				}
 				break;
 			case Constants.DOWNLOADING:
@@ -160,38 +140,11 @@ public class OnlineDictionaryActivity extends Activity {
 					sqLiteDatabase.insert("dictionary_list", null,
 							contentValues);
 				}
+
 				sqLiteDatabase.close();
 
-				SharedPreferences sharedPreferences = OnlineDictionaryActivity.this
-						.getSharedPreferences(Config.PREFER_NAME,
-								Context.MODE_PRIVATE);
-				SharedPreferences.Editor editor = sharedPreferences.edit();
-				editor.putInt("last_refresh_online_dictionary",
-						(int) System.currentTimeMillis());
-				editor.commit();
-
-				OnlineListCursorAdapter onlineListCursorAdapter;
 				if (sqLiteDatabase != null && sqLiteDatabase.isOpen()) {
 					sqLiteDatabase.close();
-				}
-				sqLiteDatabase = null;
-				try {
-					sqLiteDatabase = new DictionaryDB(
-							OnlineDictionaryActivity.this,
-							DictionaryDB.DB_NAME, null, DictionaryDB.DB_VERSION)
-							.getReadableDatabase();
-					cursor = sqLiteDatabase.rawQuery(
-							"select * from dictionary_list", null);
-					startManagingCursor(cursor);
-					onlineListCursorAdapter = new OnlineListCursorAdapter(
-							OnlineDictionaryActivity.this, cursor);
-					dictionaryList.setAdapter(onlineListCursorAdapter);
-				} catch (JSONException e) {
-					e.printStackTrace();
-				} finally {
-					if (sqLiteDatabase != null && sqLiteDatabase.isOpen()) {
-						sqLiteDatabase.close();
-					}
 				}
 
 			}
@@ -208,18 +161,12 @@ public class OnlineDictionaryActivity extends Activity {
 			SQLiteDatabase sqLiteDatabase = null;
 			Cursor cursor;
 			try {
-				URL url = new URL(Constants.ONLINE_DICTIONARY_LIST_URL);
-				URLConnection urlConnection = url.openConnection();
-				urlConnection.setConnectTimeout(30000);
-				BufferedReader bufferedReader = new BufferedReader(
-						new InputStreamReader(urlConnection.getInputStream()));
-				StringBuilder jsonResultBuilder = new StringBuilder();
-				String line = "";
-				while ((line = bufferedReader.readLine()) != null) {
-					jsonResultBuilder.append(line);
-				}
+				String jsonString = JsonGetter
+						.get(Constants.ONLINE_DICTIONARY_LIST_URL);
+
 				Message msg_success = new Message();
-				ParseJson(jsonResultBuilder.toString());
+				Log.i("json", jsonString);
+				ParseJson(jsonString);
 
 				DictionaryDB dictionaryDB = new DictionaryDB(
 						OnlineDictionaryActivity.this, DictionaryDB.DB_NAME,

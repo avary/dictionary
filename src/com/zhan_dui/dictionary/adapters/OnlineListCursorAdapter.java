@@ -4,8 +4,6 @@ import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Random;
 
-import org.json.JSONException;
-
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.content.Context;
@@ -40,8 +38,7 @@ public class OnlineListCursorAdapter extends CursorAdapter {
 
 	public static ArrayList<String> dictionarysDownloading = new ArrayList<String>();
 
-	public OnlineListCursorAdapter(Context context, Cursor c)
-			throws JSONException {
+	public OnlineListCursorAdapter(Context context, Cursor c) {
 		super(context, c);
 		this.context = context;
 		if (c == null) {
