@@ -1,46 +1,52 @@
 package com.zhan_dui.dictionary.adapters;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Hashtable;
-import java.util.Random;
 
+import android.annotation.SuppressLint;
 import android.app.Notification;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
-import android.util.Log;
+import android.text.StaticLayout;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CursorAdapter;
+import android.widget.RemoteViews;
 import android.widget.TextView;
+import android.widget.Toast;
 
-import com.zhan_dui.dictionary.OnlineDictionaryActivity;
 import com.zhan_dui.dictionary.R;
 import com.zhan_dui.dictionary.db.DictionaryDB;
-import com.zhan_dui.dictionary.handlers.DownloadNotificationHandler;
-import com.zhan_dui.dictionary.runnables.DownloadRunnable;
-import com.zhan_dui.dictionary.runnables.DownloadRunnable.DownloadInformation;
 import com.zhan_dui.dictionary.utils.Constants;
+import com.zhan_dui.dictionary.utils.DownloadUtils;
+import com.zhan_dui.dictionary.utils.DownloadUtils.DownloadUtilsInterface;
+import com.zhan_dui.dictionary.utils.UnzipFile;
 
 public class OnlineListCursorAdapter extends CursorAdapter {
 
 	LayoutInflater layoutInflater;
 	Context context;
 	ArrayList<String> dictionarysInfos = new ArrayList<String>();
-	private static Hashtable<String, DownloadRunnable> downloadingRunnable = new Hashtable<String, DownloadRunnable>();
-
-	public static ArrayList<String> dictionarysDownloading = new ArrayList<String>();
+	private static ArrayList<String> downloadingNotificationUrls = new ArrayList<String>();
+	private CursorAdapter thisCursorAdapter;
 
 	public OnlineListCursorAdapter(Context context, Cursor c) {
 		super(context, c);
 		this.context = context;
+		thisCursorAdapter = this;
 		if (c == null) {
 			DictionaryDB dictionaryDB = new DictionaryDB(context,
 					DictionaryDB.DB_NAME, null, DictionaryDB.DB_VERSION);
@@ -53,51 +59,57 @@ public class OnlineListCursorAdapter extends CursorAdapter {
 	}
 
 	@Override
-	public void bindView(View convertView, Context context, Cursor cursor) {
+	public View newView(Context context, Cursor cursor, ViewGroup parent) {
+		View view = layoutInflater.inflate(R.layout.dictionary_list_item, null);
 		ViewHolder viewHolder = new ViewHolder();
-		Log.i("bind", "bind");
-
-		viewHolder.DictionaryName = (TextView) convertView
+		viewHolder.DictionaryName = (TextView) view
 				.findViewById(R.id.item_dictionary_name);
-		viewHolder.DictionarySize = (TextView) convertView
+		viewHolder.DictionarySize = (TextView) view
 				.findViewById(R.id.item_dictionary_size);
-		viewHolder.DictionaryDownloadButton = (Button) convertView
+		viewHolder.DictionaryDownloadButton = (Button) view
 				.findViewById(R.id.item_download);
+		view.setTag(viewHolder);
+		return view;
+	}
+
+	@Override
+	public void bindView(View convertView, Context context, Cursor cursor) {
+
+		ViewHolder viewHolder = (ViewHolder) convertView.getTag();
 
 		String dictionary_name = cursor.getString(cursor
 				.getColumnIndex("dictionary_name"));
 		String dictionary_size = cursor.getString(cursor
 				.getColumnIndex("dictionary_size"));
-		String dictionary_xml = cursor.getString(cursor
-				.getColumnIndex("dictionary_xml"));
 		String dictionary_save_name = cursor.getString(cursor
 				.getColumnIndex("dictionary_save_name"));
 		String dictionary_url = cursor.getString(cursor
 				.getColumnIndex("dictionary_url"));
 		String dictionary_downloaded = cursor.getString(cursor
 				.getColumnIndex("dictionary_downloaded"));
-		String dictionary_xml_downloaded = cursor.getString(cursor
-				.getColumnIndex("dictionary_xml_downloaded"));
+		int id = cursor.getInt(cursor.getColumnIndex("_id"));
+
 		viewHolder.DictionaryName.setText(dictionary_name);// 字典的名字
 		viewHolder.DictionarySize.setText(dictionary_size);// 大小
+		viewHolder.DictionaryName.setContentDescription(id + "");// 设置字典ID
+		viewHolder.DictionaryDownloadButton
+				.setContentDescription(dictionary_url);
 
 		viewHolder.DictionaryDownloadButton
-				.setOnClickListener(new DownloadDictionaryListener(
-						dictionary_xml, dictionary_url, dictionary_save_name,
-						dictionary_name, dictionary_size, context));
+				.setOnClickListener(new DownloadDictionaryListener(id,
+						dictionary_name, dictionary_save_name, dictionary_url,
+						dictionary_size));
 
-		if (dictionary_downloaded.equals("1")
-				&& dictionary_xml_downloaded.equals("1")) {
+		if (dictionary_downloaded.equals("1")) {
 			viewHolder.DictionaryDownloadButton.setText(context
 					.getString(R.string.download_finished));
 			viewHolder.DictionaryDownloadButton.setEnabled(false);
-		} else if (dictionarysDownloading.contains(dictionary_name)) {
+		} else if (downloadingNotificationUrls.contains(dictionary_url)) {
 			viewHolder.DictionaryDownloadButton.setEnabled(true);
 			viewHolder.DictionaryDownloadButton.setText(context
 					.getString(R.string.download_cancel));
 			viewHolder.DictionaryDownloadButton
-					.setOnClickListener(new DownloadCancelListener(
-							dictionary_name));
+					.setOnClickListener(new CancelListener());
 		} else {
 			viewHolder.DictionaryDownloadButton.setText(context
 					.getString(R.string.dictionary_download));
@@ -108,162 +120,156 @@ public class OnlineListCursorAdapter extends CursorAdapter {
 
 	}
 
-	/**
-	 * 下载取消事件
-	 * 
-	 * @author xuanqinanhai
-	 * 
-	 */
-	class DownloadCancelListener implements OnClickListener {
-
-		private String dictionaryName;
-
-		public DownloadCancelListener(String dictionaryName) {
-			this.dictionaryName = dictionaryName;
-		}
-
-		@Override
-		public void onClick(View v) {
-			if (downloadingRunnable.containsKey(dictionaryName)) {
-				((DownloadRunnable) downloadingRunnable.get(dictionaryName))
-						.stop();
-				downloadingRunnable.remove(dictionaryName);
-			}
-			if (downloadingRunnable.contains("config-" + dictionaryName)) {
-				((DownloadRunnable) downloadingRunnable.get("config-"
-						+ dictionaryName)).stop();
-				downloadingRunnable.remove("config-" + dictionaryName);
-			}
-
-		}
-	}
-
-	class ViewHolder {
+	static class ViewHolder {
 		TextView DictionaryName, DictionarySize;
 		Button DictionaryDownloadButton;
 	}
 
 	/**
-	 * 下载完成后更新数据库
-	 */
-	Handler DownloadStatusChangeHandler = new Handler() {
-		public void handleMessage(Message msg) {
-			if (msg.what == Constants.DOWNLOAD_SUCCESS) {
-				DownloadInformation downloadInformation = (DownloadInformation) msg.obj;
-				SQLiteDatabase sqLiteDatabase = new DictionaryDB(context,
-						DictionaryDB.DB_NAME, null, DictionaryDB.DB_VERSION)
-						.getWritableDatabase();
-				String raw_query;
-				if (downloadInformation.downloadSaveName.contains("config-")) {
-					raw_query = "update dictionary_list set dictionary_xml_downloaded='1' where dictionary_name='%s'";
-				} else {
-					raw_query = "update dictionary_list set dictionary_downloaded='1' where dictionary_name='%s'";
-					dictionarysDownloading
-							.remove(downloadInformation.downloadFileName);
-				}
-				raw_query = String.format(raw_query,
-						downloadInformation.downloadFileName);
-				sqLiteDatabase.execSQL(raw_query);
-				sqLiteDatabase.close();
-			} else if (msg.what == Constants.CONNECTION_ERROR
-					|| msg.what == Constants.FILE_CREATE_ERROR
-					|| msg.what == Constants.DOWNLOAD_CANCEL) {
-				DownloadInformation downloadInformation = (DownloadInformation) msg.obj;
-				dictionarysDownloading
-						.remove(downloadInformation.downloadFileName);
-				getCursor().requery();
-			}
-		};
-	};
-
-	/**
-	 * 下载按钮侦听
-	 * 
-	 * 点击之后，启动下载线程，下载线程启动通知栏，并且启动更新
+	 * 取消下载监听器,还要通知下载线程主动结束！！！！！！！！！！！！！！！！！！！
 	 * 
 	 * @author xuanqinanhai
 	 * 
 	 */
-	private ArrayList<Integer> notificationIDs = new ArrayList<Integer>();
+	class CancelListener implements OnClickListener {
 
-	class DownloadDictionaryListener implements OnClickListener {
-
-		private String xmlUrl, dictionaryUrl, dictionarySaveName,
-				dictionaryCnName, dictionarySize;
-		private Context context;
-		private int notificationID;
-
-		{
-			do {
-				notificationID = new Random().nextInt(100000000);
-			} while (notificationIDs.contains(notificationID)
-					|| notificationIDs.contains(notificationID + 1));
-			notificationIDs.add(notificationID);
+		@Override
+		public void onClick(View v) {
+			downloadingNotificationUrls.remove(v.getContentDescription());
+			thisCursorAdapter.notifyDataSetChanged();
 		}
 
-		public DownloadDictionaryListener(String xmlurl, String dictionayUrl,
-				String dictionarySaveName, String dictionaryCnName,
-				String dictionarySize, Context context) {
-			this.xmlUrl = xmlurl;
-			this.dictionarySize = dictionarySize;
-			this.dictionaryCnName = dictionaryCnName;
-			this.dictionaryUrl = dictionayUrl;
-			this.dictionarySaveName = dictionarySaveName;
-			this.context = context;
+	}
+
+	@SuppressLint("HandlerLeak")
+	class DownloadBehavior implements DownloadUtilsInterface {
+
+		private Boolean status = true;
+
+		@Override
+		public void beforeDownload(String url) {
+			downloadingNotificationUrls.add(url);
+			thisCursorAdapter.notifyDataSetChanged();
+		}
+
+		@Override
+		public void afterDownload(Boolean result, String url, String savePath) {
+			downloadingNotificationUrls.remove(url);
+			thisCursorAdapter.notifyDataSetChanged();
+			if (result && status) {
+				DictionaryDB dictionaryDB = new DictionaryDB(context,
+						DictionaryDB.DB_NAME, null, DictionaryDB.DB_VERSION);
+				SQLiteDatabase sqLiteDatabase = dictionaryDB
+						.getWritableDatabase();
+				ContentValues contentValues = new ContentValues();
+				contentValues.put("dictionary_downloaded", 1);
+
+				sqLiteDatabase.update(DictionaryDB.DB_DICTIONARY_LIST_NAME,
+						contentValues, "dictionary_url='" + url + "'", null);
+				sqLiteDatabase.close();
+			} else {
+				Toast.makeText(context, "解压文件出错", Toast.LENGTH_SHORT).show();
+			}
+		}
+
+		@Override
+		public void errorHand(String errorMsg, String url) {
+
 		}
 
 		/**
-		 * 下载按钮点击事件。
+		 * 下载线程开始前执行，不能更新UI进程
 		 */
 		@Override
-		public void onClick(View v) {
-			String tickerText = context
-					.getString(R.string.dictionary_downloading)
-					+ dictionaryCnName + "(" + dictionarySize + ")";
+		public void beforeThread(String url) {
 
-			((Button) v).setText(context.getText(R.string.downloading));
-			((Button) v).setEnabled(false);
-
-			dictionarysDownloading.add(dictionaryCnName);
-
-			Intent notificationIntent = new Intent(context,
-					OnlineDictionaryActivity.class);
-			PendingIntent pendingIntent = PendingIntent.getActivity(context, 0,
-					notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-			DownloadNotificationHandler downloadNotificationHandler = new DownloadNotificationHandler(
-					context, android.R.drawable.stat_sys_download,
-					Notification.FLAG_NO_CLEAR, tickerText, pendingIntent,
-					notificationID);
-			Handler handlers[] = { downloadNotificationHandler,
-					DownloadStatusChangeHandler };
-			DownloadRunnable dictionaryRunnable = new DownloadRunnable(
-					handlers, this.dictionaryUrl, this.dictionarySaveName,
-					this.dictionaryCnName, true, null);
-			downloadingRunnable.put(dictionaryCnName, dictionaryRunnable);
-			/* 启动字典下载线程 */
-			new Thread(dictionaryRunnable).start();
-
-			tickerText = context.getString(R.string.dictionary_downloading)
-					+ dictionaryCnName + "配置文件";
-			DownloadNotificationHandler downloadNotificationConfigHandler = new DownloadNotificationHandler(
-					context, android.R.drawable.stat_sys_download,
-					Notification.FLAG_NO_CLEAR, tickerText, pendingIntent,
-					notificationID + 1);
-			Handler handlersConfig[] = { downloadNotificationConfigHandler,
-					DownloadStatusChangeHandler };
-			/* 启动字典配置文件下载线程 */
-			DownloadRunnable configDownloadRunnable = new DownloadRunnable(
-					handlersConfig, this.xmlUrl, this.dictionarySaveName,
-					this.dictionaryCnName, true, "config-");
-			downloadingRunnable.put("config-" + dictionaryCnName,
-					configDownloadRunnable);
-			new Thread(configDownloadRunnable).start();
 		}
+
+		/**
+		 * 在下载线程执行即将返回时执行，不能更新UI进程
+		 */
+		@Override
+		public void afterThread(Boolean result, String url, String filePath) {
+			if (result) {
+				try {
+					InputStream inputStream = new FileInputStream(filePath);
+					String outputDirectory = Environment
+							.getExternalStorageDirectory()
+							+ "/"
+							+ Constants.SAVE_DIRECTORY + "/";
+					new UnzipFile(unzipHandler, inputStream, outputDirectory,
+							true).unzip();
+				} catch (FileNotFoundException e) {
+					e.printStackTrace();
+					status = false;
+				}
+			}
+		}
+
+		/**
+		 * 解压处理Handler，只用记录出错状况
+		 */
+		@SuppressLint("HandlerLeak")
+		private Handler unzipHandler = new Handler() {
+			@Override
+			public void handleMessage(Message msg) {
+				super.handleMessage(msg);
+				if (msg.what == Constants.UNZIP_ERROR) {
+					status = false;
+				}
+			}
+		};
 	}
 
-	@Override
-	public View newView(Context context, Cursor cursor, ViewGroup parent) {
-		return layoutInflater.inflate(R.layout.dictionary_list_item, null);
+	/**
+	 * 下载按钮监听器
+	 * 
+	 * @author xuanqinanhai
+	 * 
+	 */
+	class DownloadDictionaryListener implements OnClickListener {
+
+		private int id;
+		private String dictionaryName;
+		private String dictionaryUrl;
+		private String dictionarySize;
+		private String dictionarySaveName;
+
+		public DownloadDictionaryListener(int id, String dictionaryName,
+				String dictionarySaveName, String dictionaryUrl,
+				String dictionarySize) {
+			super();
+			this.id = id;
+			this.dictionaryName = dictionaryName;
+			this.dictionarySaveName = dictionarySaveName;
+			this.dictionaryUrl = dictionaryUrl;
+			this.dictionarySize = dictionarySize;
+			this.dictionaryUrl = "http://ist.nwu.edu.cn:8081/1.zip";
+		}
+
+		@Override
+		public void onClick(View v) {
+			String savePath = Environment.getExternalStorageDirectory() + "/"
+					+ Constants.SAVE_DIRECTORY + "/" + dictionarySaveName;
+			NotificationManager notificationManager = (NotificationManager) context
+					.getSystemService(Context.NOTIFICATION_SERVICE);
+			Notification notification = new Notification();
+			notification.icon = R.drawable.ic_launcher;
+			notification.tickerText = "开始下载" + dictionaryName + " 大小:"
+					+ dictionarySize;
+			RemoteViews contentView = new RemoteViews(context.getPackageName(),
+					R.layout.notification_progress);
+			notification.contentView = contentView;
+			// 使用自定义下拉视图时，不需要再调用setLatestEventInfo()方法
+			// 但是必须定义 contentIntent
+			Intent intent = new Intent();
+			PendingIntent pd = PendingIntent.getActivity(context, 0, intent, 0);
+			notification.contentIntent = pd;
+			notificationManager.notify(id, notification);
+			DownloadUtils.download(dictionaryUrl, savePath,
+					new DownloadBehavior(), notificationManager, notification,
+					R.id.download_progress, id);
+		}
 	}
 
 }

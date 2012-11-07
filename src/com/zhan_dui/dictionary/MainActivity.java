@@ -10,10 +10,8 @@ import org.xml.sax.SAXException;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Environment;
@@ -33,9 +31,8 @@ import android.widget.Toast;
 
 import com.zhan_dui.dictionary.adapters.ViewPagerAdapter;
 import com.zhan_dui.dictionary.db.DictionaryDB;
-import com.zhan_dui.dictionary.utils.Config;
 import com.zhan_dui.dictionary.utils.Constants;
-import com.zhan_dui.dictionary.utils.UnzipFile;
+import com.zhan_dui.dictionary.utils.UnzipFileInThread;
 import com.zhan_dui.dictionary.utils.UnzipHandler;
 
 @SuppressLint("HandlerLeak")
@@ -107,7 +104,7 @@ public class MainActivity extends Activity {
 			try {
 				InputStream inputStream = context.getAssets().open(
 						Constants.BASE_DICTIONARY_ASSET);
-				new UnzipFile(new UnzipHandler(MainActivity.this), inputStream,
+				new UnzipFileInThread(new UnzipHandler(MainActivity.this), inputStream,
 						Environment.getExternalStorageDirectory() + "/"
 								+ Constants.SAVE_DIRECTORY + "/", true).start();
 			} catch (IOException e) {

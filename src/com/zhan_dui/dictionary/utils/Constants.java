@@ -8,6 +8,7 @@ public class Constants {
 	public static final int DOWNLOAD_SUCCESS = 0;
 	public static final int DOWNLOAD_FINISH = 2;
 	public static final int DOWNLOAD_CANCEL = 3;
+	public static final int DOWNLOAD_START = 4;
 
 	public static final int MOVE_START = 0;
 	public static final int MOVING = 1;
@@ -31,4 +32,5 @@ public class Constants {
 	public static final int UNZIP_ERROR = -1;
 	public static final int UNZIP_START = 1;
 	public static final int UNZIP_FINISH = 2;
+
 }

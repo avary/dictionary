@@ -7,14 +7,11 @@ import java.io.InputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-
-import android.content.Context;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 
-public class UnzipFile extends Thread {
-
+public class UnzipFile {
 	private Handler dealHandler;
 	private InputStream inputStream;
 	private String outputDirectory;
@@ -40,9 +37,7 @@ public class UnzipFile extends Thread {
 	 * @throws IOException
 	 */
 
-	@Override
-	public void run() {
-		super.run();
+	public void unzip() {
 		// 创建解压目标目录
 		File file = new File(outputDirectory);
 		// 如果目标目录不存在，则创建
@@ -79,7 +74,6 @@ public class UnzipFile extends Thread {
 							+ zipEntry.getName());
 					// 文件需要覆盖或者文件不存在，则解压文件
 					if (isReWrite || !file.exists()) {
-
 						file.createNewFile();
 						FileOutputStream fileOutputStream = new FileOutputStream(
 								file);

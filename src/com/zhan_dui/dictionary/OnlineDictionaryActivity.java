@@ -92,6 +92,7 @@ public class OnlineDictionaryActivity extends Activity {
 						OnlineDictionaryActivity.this,
 						getString(R.string.progress_downloading),
 						getString(R.string.progress_wait));
+				progressDialog.setCancelable(true);
 				break;
 			default:
 				break;
@@ -159,7 +160,6 @@ public class OnlineDictionaryActivity extends Activity {
 			msg.setTarget(onlineInfoHandler);
 			msg.sendToTarget();
 			SQLiteDatabase sqLiteDatabase = null;
-			Cursor cursor;
 			try {
 				String jsonString = JsonGetter
 						.get(Constants.ONLINE_DICTIONARY_LIST_URL);
@@ -167,17 +167,8 @@ public class OnlineDictionaryActivity extends Activity {
 				Message msg_success = new Message();
 				Log.i("json", jsonString);
 				ParseJson(jsonString);
-
-				DictionaryDB dictionaryDB = new DictionaryDB(
-						OnlineDictionaryActivity.this, DictionaryDB.DB_NAME,
-						null, DictionaryDB.DB_VERSION);
-				sqLiteDatabase = dictionaryDB.getReadableDatabase();
-				cursor = sqLiteDatabase.rawQuery(
-						"select * from dictionary_list", null);
-				OnlineDictionaryActivity.this.startManagingCursor(cursor);
 				msg_success.setTarget(onlineInfoHandler);
 				msg_success.what = Constants.DOWNLOAD_SUCCESS;
-				msg_success.obj = cursor;
 				msg_success.sendToTarget();
 			} catch (Exception e) {
 				e.printStackTrace();
