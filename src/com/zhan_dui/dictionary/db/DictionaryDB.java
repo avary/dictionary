@@ -1,12 +1,9 @@
 package com.zhan_dui.dictionary.db;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
@@ -20,8 +17,6 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteDatabase.CursorFactory;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.os.Environment;
-import android.os.Handler;
-import android.os.Message;
 import android.text.Html;
 import android.util.Log;
 import android.util.TypedValue;
@@ -30,7 +25,6 @@ import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.LinearLayout.LayoutParams;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.zhan_dui.dictionary.R;
 import com.zhan_dui.dictionary.db.DictionaryParseInfomation.EchoViews;
@@ -60,7 +54,7 @@ public class DictionaryDB extends SQLiteOpenHelper {
 
 	@Override
 	public void onCreate(SQLiteDatabase sqLiteDatabase) {
-		String createSql = "create table dictionary_list (_id INTEGER PRIMARY KEY AUTOINCREMENT,dictionary_name text,dictionary_size text,dictionary_url text,dictionary_save_name text,dictionary_downloaded INTEGER default 0);";
+		String createSql = "create table dictionary_list (_id INTEGER PRIMARY KEY AUTOINCREMENT,dictionary_name text,dictionary_size text,dictionary_url text,dictionary_save_name text,dictionary_downloaded INTEGER default 0,dictionary_show INTEGER default 0);";
 		sqLiteDatabase.execSQL(createSql);
 	}
 
@@ -79,7 +73,7 @@ public class DictionaryDB extends SQLiteOpenHelper {
 	 * @return 返回一个int代表单词的id
 	 */
 	private int queryWordId(SQLiteDatabase sqLiteDatabase, String word) {
-		String[] tableStrings = { "id" };
+		String[] tableStrings = {"id"};
 		Cursor cursor = sqLiteDatabase.query("word", tableStrings, "word='"
 				+ word + "'", null, null, null, null);
 		if (cursor.moveToNext()) {
@@ -97,9 +91,11 @@ public class DictionaryDB extends SQLiteOpenHelper {
 	private final String SIZE_SMALL = "<small>%s</small>";
 	private final String SIZE_LARGE = "<big>%s</big>";
 	private final String FONT = "<font color='%s'>%s</font>";
-	private final String LI_WRAPPER = "<li>%s</li>";
-	private final String UL_WRAPPER = "<ul>%s</ul>";
-	private final String OL_WRAPPER = "<ol>%s</ol>";
+	// private final String LI_WRAPPER = "<li>%s</li>";
+	// private final String UL_WRAPPER = "<ul>%s</ul>";
+	// private final String OL_WRAPPER = "<ol>%s</ol>";
+
+	private HashMap<String, DictionaryParseInfomation> cacheXMLInformation = new HashMap<String, DictionaryParseInfomation>();
 
 	/**
 	 * 查询单词，根据配置的XML文件查询
@@ -115,40 +111,46 @@ public class DictionaryDB extends SQLiteOpenHelper {
 	 *             XML文件转换异常
 	 * @throws SAXException
 	 *             SAX转换异常
+	 * @throws IOException
 	 */
 	public View queryWord(Context context, String word, String sqliteFileName,
-			String xmlfile) throws ParserConfigurationException, SAXException {
+			String xmlFileName) throws ParserConfigurationException,
+			SAXException, IOException {
 
 		SAXParserFactory saxParserFactory = SAXParserFactory.newInstance();
 		SAXParser saxParser = saxParserFactory.newSAXParser();
 		DictionaryXMLHandler dictionaryXMLHandler = new DictionaryXMLHandler();
+		DictionaryParseInfomation dictionaryParseInfomation;
 
-		try {
-			saxParser.parse(new File(xmlfile), dictionaryXMLHandler);
-		} catch (IOException e) {
-			e.printStackTrace();
-			Toast.makeText(context, "ConvertError", Toast.LENGTH_SHORT).show();
-			return null;
+		if (cacheXMLInformation.containsKey(sqliteFileName)) {
+			dictionaryParseInfomation = cacheXMLInformation.get(sqliteFileName);
+		} else {
+			String xmlFilePath = Environment.getExternalStorageDirectory()
+					+ "/" + Constants.SAVE_DIRECTORY + "/" + xmlFileName;
+			saxParser.parse(new File(xmlFilePath), dictionaryXMLHandler);
+			dictionaryParseInfomation = dictionaryXMLHandler.getResults();
+			cacheXMLInformation.put(sqliteFileName, dictionaryParseInfomation);
 		}
 
-		DictionaryParseInfomation dictionaryParseInfomation = dictionaryXMLHandler
-				.getResults();
-		dictionaryParseInfomation.toString();
 		SQLiteDatabase sqLiteDatabase = SQLiteDatabase.openDatabase(
 				Environment.getExternalStorageDirectory() + "/"
 						+ Constants.SAVE_DIRECTORY + "/" + sqliteFileName,
-				null, SQLiteDatabase.OPEN_READONLY);
+				null, SQLiteDatabase.OPEN_READWRITE);
+
 		String table = dictionaryParseInfomation.table;
 		String[] columns = (String[]) (dictionaryParseInfomation.queryWords
 				.toArray(new String[0]));
+
 		SQLiteDatabase iddatabase = SQLiteDatabase.openDatabase(DB_PATH
-				+ DB_BASE_DIC, null, SQLiteDatabase.OPEN_READONLY);
+				+ DB_BASE_DIC, null, SQLiteDatabase.OPEN_READWRITE);
 		int word_id = queryWordId(iddatabase, word);
 		Log.i("word_id", word_id + "");
 		iddatabase.close();
-		String[] selectionArgs = { word_id + "" };
+
+		String[] selectionArgs = {word_id + ""};
 		Cursor cursor = sqLiteDatabase.query(table, columns, "word_id=?",
 				selectionArgs, null, null, null);
+
 		LinearLayout linearLayout = new LinearLayout(context);
 		linearLayout.setOrientation(LinearLayout.VERTICAL);
 		ViewGroup.LayoutParams layoutParams = new LayoutParams(
@@ -234,8 +236,8 @@ public class DictionaryDB extends SQLiteOpenHelper {
 		SQLiteDatabase sqLiteDatabase = SQLiteDatabase.openDatabase(DB_PATH
 				+ DB_BASE_DIC, null, SQLiteDatabase.OPEN_READONLY);
 		int word_id = queryWordId(sqLiteDatabase, word);
-		String[] tableString = { "simple_meaning" };
-		String[] selectionArgs = { word_id + "" };
+		String[] tableString = {"simple_meaning"};
+		String[] selectionArgs = {word_id + ""};
 		Cursor cursor = sqLiteDatabase.query("simpledic", tableString,
 				"word_id=?", selectionArgs, null, null, null);
 		LinearLayout linearLayout = new LinearLayout(context);
@@ -269,19 +271,4 @@ public class DictionaryDB extends SQLiteOpenHelper {
 		return linearLayout;
 	}
 
-	public void openDB() {
-		SQLiteDatabase sqLiteDatabase = SQLiteDatabase.openDatabase(DB_PATH
-				+ DB_NAME, null, SQLiteDatabase.OPEN_READONLY);
-		String[] tableStrings = { "id", "en" };
-		Cursor cursor = sqLiteDatabase.query("word", tableStrings, "id='1000'",
-				null, null, null, null);
-		Log.i("cursor", cursor.getCount() + " ");
-	}
-
-	/**
-	 * 从SD卡copy数据库文件到database目录
-	 */
-	public void copyDatabaseFromSD(String filePath) {
-
-	}
 }

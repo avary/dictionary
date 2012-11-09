@@ -3,6 +3,7 @@ package com.zhan_dui.dictionary.adapters;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 
 import android.annotation.SuppressLint;
@@ -17,7 +18,6 @@ import android.database.sqlite.SQLiteDatabase;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
-import android.text.StaticLayout;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -41,6 +41,7 @@ public class OnlineListCursorAdapter extends CursorAdapter {
 	Context context;
 	ArrayList<String> dictionarysInfos = new ArrayList<String>();
 	private static ArrayList<String> downloadingNotificationUrls = new ArrayList<String>();
+	private static ArrayList<String> downloadingNotificationCancels = new ArrayList<String>();
 	private CursorAdapter thisCursorAdapter;
 
 	public OnlineListCursorAdapter(Context context, Cursor c) {
@@ -109,7 +110,7 @@ public class OnlineListCursorAdapter extends CursorAdapter {
 			viewHolder.DictionaryDownloadButton.setText(context
 					.getString(R.string.download_cancel));
 			viewHolder.DictionaryDownloadButton
-					.setOnClickListener(new CancelListener());
+					.setOnClickListener(new CancelListener(dictionary_url));
 		} else {
 			viewHolder.DictionaryDownloadButton.setText(context
 					.getString(R.string.dictionary_download));
@@ -126,17 +127,24 @@ public class OnlineListCursorAdapter extends CursorAdapter {
 	}
 
 	/**
-	 * 取消下载监听器,还要通知下载线程主动结束！！！！！！！！！！！！！！！！！！！
+	 * 取消下载监听器
 	 * 
 	 * @author xuanqinanhai
 	 * 
 	 */
 	class CancelListener implements OnClickListener {
 
+		private String toCancel;
+
+		public CancelListener(String url) {
+			this.toCancel = url;
+		}
+
 		@Override
 		public void onClick(View v) {
 			downloadingNotificationUrls.remove(v.getContentDescription());
 			thisCursorAdapter.notifyDataSetChanged();
+			downloadingNotificationCancels.add(this.toCancel);
 		}
 
 	}
@@ -145,6 +153,16 @@ public class OnlineListCursorAdapter extends CursorAdapter {
 	class DownloadBehavior implements DownloadUtilsInterface {
 
 		private Boolean status = true;
+		private NotificationManager notificationManager;
+		private Notification notification;
+		private int notificationId;
+
+		public DownloadBehavior(NotificationManager notificationManager,
+				Notification notification, int notificationId) {
+			this.notificationManager = notificationManager;
+			this.notification = notification;
+			this.notificationId = notificationId;
+		}
 
 		@Override
 		public void beforeDownload(String url) {
@@ -162,19 +180,18 @@ public class OnlineListCursorAdapter extends CursorAdapter {
 				SQLiteDatabase sqLiteDatabase = dictionaryDB
 						.getWritableDatabase();
 				ContentValues contentValues = new ContentValues();
-				contentValues.put("dictionary_downloaded", 1);
+				contentValues.put("dictionary_downloaded", "1");
 
+				String args[] = { url };
 				sqLiteDatabase.update(DictionaryDB.DB_DICTIONARY_LIST_NAME,
-						contentValues, "dictionary_url='" + url + "'", null);
+						contentValues, "dictionary_url=?", args);
 				sqLiteDatabase.close();
-			} else {
-				Toast.makeText(context, "解压文件出错", Toast.LENGTH_SHORT).show();
 			}
 		}
 
 		@Override
 		public void errorHand(String errorMsg, String url) {
-
+			Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show();
 		}
 
 		/**
@@ -219,6 +236,42 @@ public class OnlineListCursorAdapter extends CursorAdapter {
 				}
 			}
 		};
+
+		@Override
+		public void update(String url, int fileDownloaded, int fileSize) {
+			String downloadedText;
+			if (fileDownloaded < 1048576) {
+				downloadedText = new DecimalFormat("#.00")
+						.format(fileDownloaded / 1024.0) + "KB";
+			} else {
+				downloadedText = new DecimalFormat("#.00")
+						.format(fileDownloaded / 1048576.0) + "MB";
+			}
+			String totalText;
+			if (fileSize < 1048576) {
+				totalText = new DecimalFormat("#.00").format(fileSize / 1024.0)
+						+ "KB";
+			} else {
+				totalText = new DecimalFormat("#.00")
+						.format(fileSize / 1048576.0) + "MB";
+			}
+			String progressText = String.format("%d%%(%s/%s)",
+					(int) (((double) fileDownloaded / fileSize) * 100),
+					downloadedText, totalText);
+
+			notification.contentView.setTextViewText(
+					R.id.txt_download_progress, progressText);
+			notificationManager.notify(notificationId, notification);
+		}
+
+		public void addAnAbort(String url) {
+			downloadingNotificationCancels.add(url);
+		}
+
+		@Override
+		public boolean ifAbort(String url) {
+			return downloadingNotificationCancels.remove(url);
+		}
 	}
 
 	/**
@@ -244,7 +297,6 @@ public class OnlineListCursorAdapter extends CursorAdapter {
 			this.dictionarySaveName = dictionarySaveName;
 			this.dictionaryUrl = dictionaryUrl;
 			this.dictionarySize = dictionarySize;
-			this.dictionaryUrl = "http://ist.nwu.edu.cn:8081/1.zip";
 		}
 
 		@Override
@@ -254,7 +306,7 @@ public class OnlineListCursorAdapter extends CursorAdapter {
 			NotificationManager notificationManager = (NotificationManager) context
 					.getSystemService(Context.NOTIFICATION_SERVICE);
 			Notification notification = new Notification();
-			notification.icon = R.drawable.ic_launcher;
+			notification.icon = android.R.drawable.stat_sys_download;
 			notification.tickerText = "开始下载" + dictionaryName + " 大小:"
 					+ dictionarySize;
 			RemoteViews contentView = new RemoteViews(context.getPackageName(),
@@ -265,10 +317,14 @@ public class OnlineListCursorAdapter extends CursorAdapter {
 			Intent intent = new Intent();
 			PendingIntent pd = PendingIntent.getActivity(context, 0, intent, 0);
 			notification.contentIntent = pd;
+			notification.contentView.setTextViewText(
+					R.id.txt_download_dictionary_name, dictionaryName);
 			notificationManager.notify(id, notification);
-			DownloadUtils.download(dictionaryUrl, savePath,
-					new DownloadBehavior(), notificationManager, notification,
-					R.id.download_progress, id);
+			DownloadUtils
+					.download(dictionaryUrl, savePath, new DownloadBehavior(
+							notificationManager, notification, id),
+							notificationManager, notification,
+							R.id.download_progress, id);
 		}
 	}
 

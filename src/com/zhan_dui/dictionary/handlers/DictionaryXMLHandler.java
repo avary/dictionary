@@ -5,9 +5,10 @@ import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
 import com.zhan_dui.dictionary.db.DictionaryParseInfomation;
-
-import android.util.Log;
-
+/**
+ * @Description:分析XML文件
+ * @date 2012-11-9 上午11:16:00
+ */
 public class DictionaryXMLHandler extends DefaultHandler {
 
 	private DictionaryParseInfomation dictionaryParseInfomation;
@@ -35,7 +36,6 @@ public class DictionaryXMLHandler extends DefaultHandler {
 		if (data.trim().length() == 0) {
 			return;
 		}
-		Log.i("chaaracters", currentFlag + ":" + data);
 		if (currentFlag.equals("title")) {
 			dictionaryParseInfomation.title = data;
 		} else if (currentFlag.equals("queryword")) {

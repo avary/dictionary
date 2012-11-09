@@ -49,9 +49,45 @@ public class DownloadUtils {
 		 */
 		public void errorHand(String errorMsg, String url);
 
+		/**
+		 * 下载进度更新，共更新100次
+		 * 
+		 * @param url
+		 *            下载的文件地址
+		 * @param fileDownladed
+		 *            文件已经下载的大小
+		 * @param fileSize
+		 *            文件总大小
+		 */
+		public void update(String url, int fileDownladed, int fileSize);
+
+		/**
+		 * 线程执行开始前的行为
+		 * 
+		 * @param url
+		 */
 		public void beforeThread(String url);
 
+		/**
+		 * 线程执行即将结束的行为
+		 * 
+		 * @param result
+		 *            下载文件是否成功
+		 * @param url
+		 *            文件URL
+		 * @param filePath
+		 *            文件保存的地址
+		 */
 		public void afterThread(Boolean result, String url, String filePath);
+
+		/**
+		 * 在线程下载时候调用，注意，不要执行只能在UI线程上执行的行为,最好函数体越简单越好，这样就对下载速度的影响变小
+		 * 
+		 * @param url
+		 *            要终止下载的文件URL
+		 * @return 返回是否终止下载
+		 */
+		public boolean ifAbort(String url);
 	}
 
 	public static final String ERROR_CREATE_FILE = "创建文件错误";
@@ -59,6 +95,7 @@ public class DownloadUtils {
 	public static final String ERROR_WRONG_URL = "错误的URL格式";
 	public static final String ERROR_OPEN_URL = "打开URL连接出错";
 	public static final String ERROR_SD_CARD = "未检测到SD卡";
+	public static final String ERROR_CANCEL_DOWNLOAD = "您终止了下载";
 
 	private static class DownloadAsync extends
 			AsyncTask<Void, Integer, Boolean> {
@@ -117,6 +154,7 @@ public class DownloadUtils {
 				notification.contentView.setProgressBar(progressbarId, 100,
 						values[0], false);
 				this.notificationManager.notify(notificationId, notification);
+				downloadBehavior.update(fileUrl, values[1], values[2]);
 			} else {
 				progressBar.setProgress(values[0]);
 			}
@@ -173,8 +211,14 @@ public class DownloadUtils {
 					if (oneTimeDownloadPieceSize > everyPieceSize) {
 						downloaded += oneTimeDownloadPieceSize;
 						downloadedPercentage = (int) ((downloaded / size) * 100);
-						onProgressUpdate(downloadedPercentage);
+						onProgressUpdate(downloadedPercentage,
+								(int) downloaded, size);
 						oneTimeDownloadPieceSize = 0;
+					}
+
+					if (downloadBehavior.ifAbort(fileUrl)) {
+						errorMsg = ERROR_CANCEL_DOWNLOAD;
+						break;
 					}
 				}
 

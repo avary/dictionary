@@ -7,17 +7,18 @@
     <LinearLayout
         android:id="@+id/search_box"
         android:layout_width="fill_parent"
-        android:layout_height="50dp"
-        android:padding="5dp" >
+        android:layout_height="45dp"
+        android:paddingLeft="5dp"
+        android:paddingRight="5dp"
+        android:paddingTop="5dp" >
 
         <EditText
             android:id="@+id/edt_search_word"
             android:layout_width="0dp"
-            android:layout_height="40dp"
+            android:layout_height="35dp"
             android:layout_weight="3"
             android:background="@drawable/search_input"
             android:drawableLeft="@drawable/search"
-            android:drawablePadding="5dp"
             android:drawableRight="@drawable/search_cancel"
             android:hint="@string/search_word"
             android:singleLine="true"
@@ -26,7 +27,7 @@
         <Button
             android:id="@+id/search"
             android:layout_width="0dp"
-            android:layout_height="40dp"
+            android:layout_height="35dp"
             android:layout_weight="1"
             android:background="@drawable/btn_search_selector"
             android:text="@string/search" />
@@ -44,8 +45,7 @@
             android:id="@+id/dictionary_meaning_content"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingTop="5dp" >
+            android:orientation="vertical" >
         </LinearLayout>
     </ScrollView>
 

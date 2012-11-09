@@ -9,7 +9,6 @@ import java.util.zip.ZipInputStream;
 
 import android.os.Handler;
 import android.os.Message;
-import android.util.Log;
 
 public class UnzipFile {
 	private Handler dealHandler;
@@ -77,15 +76,8 @@ public class UnzipFile {
 						file.createNewFile();
 						FileOutputStream fileOutputStream = new FileOutputStream(
 								file);
-						int counter = 0;
-						long size = zipEntry.getSize();
 						while ((count = zipInputStream.read(buffer)) > 0) {
-							Log.i("Count", String.valueOf(count));
 							fileOutputStream.write(buffer, 0, count);
-							counter += count;
-							Message msg = Message.obtain(dealHandler,
-									Constants.UNZIPPING, counter, (int) size);
-							msg.sendToTarget();
 						}
 						fileOutputStream.close();
 					}

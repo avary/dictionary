@@ -7,6 +7,7 @@ import org.json.JSONObject;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.ContentValues;
+import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
@@ -22,7 +23,6 @@ import com.zhan_dui.dictionary.utils.Constants;
 import com.zhan_dui.dictionary.utils.JsonGetter;
 
 /**
- * 获取在线字典列表
  * 
  * @author xuanqinanhai
  * 
@@ -32,10 +32,11 @@ public class OnlineDictionaryActivity extends Activity {
 	private OnlineInfoHandler onlineInfoHandler;
 	private ProgressDialog progressDialog;
 	private ListView dictionaryList;
-
+	private Context context;
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		context = this;
 		onlineInfoHandler = new OnlineInfoHandler();
 		setContentView(R.layout.online_dictionary);
 
@@ -58,44 +59,46 @@ public class OnlineDictionaryActivity extends Activity {
 		public void handleMessage(Message msg) {
 			super.handleMessage(msg);
 			switch (msg.what) {
-			case Constants.DOWNLOAD_ERROR:
-				Toast.makeText(getApplicationContext(),
-						getString(R.string.progress_error), Toast.LENGTH_LONG)
-						.show();
-				if (progressDialog != null) {
-					progressDialog.dismiss();
-				}
-				break;
-			case Constants.DOWNLOAD_FINISH:
-				if (progressDialog != null) {
-					progressDialog.dismiss();
-				}
-				SQLiteDatabase sqLiteDatabase = new DictionaryDB(
-						OnlineDictionaryActivity.this, DictionaryDB.DB_NAME,
-						null, DictionaryDB.DB_VERSION).getReadableDatabase();
-				Cursor cursor = sqLiteDatabase.rawQuery(
-						"select * from dictionary_list", null);
-				startManagingCursor(cursor);
-				OnlineListCursorAdapter onlineListCursorAdapter = new OnlineListCursorAdapter(
-						OnlineDictionaryActivity.this, cursor);
-				dictionaryList.setAdapter(onlineListCursorAdapter);
-				break;
-			case Constants.DOWNLOAD_SUCCESS:
-				if (progressDialog != null) {
-					Toast.makeText(OnlineDictionaryActivity.this,
-							getString(R.string.progress_success),
+				case Constants.DOWNLOAD_ERROR :
+					Toast.makeText(context,
+							context.getString(R.string.progress_error),
 							Toast.LENGTH_LONG).show();
-				}
-				break;
-			case Constants.DOWNLOADING:
-				progressDialog = ProgressDialog.show(
-						OnlineDictionaryActivity.this,
-						getString(R.string.progress_downloading),
-						getString(R.string.progress_wait));
-				progressDialog.setCancelable(true);
-				break;
-			default:
-				break;
+					if (progressDialog != null) {
+						progressDialog.dismiss();
+					}
+					break;
+				case Constants.DOWNLOAD_FINISH :
+					if (progressDialog != null) {
+						progressDialog.dismiss();
+					}
+					SQLiteDatabase sqLiteDatabase = new DictionaryDB(
+							OnlineDictionaryActivity.this,
+							DictionaryDB.DB_NAME, null, DictionaryDB.DB_VERSION)
+							.getReadableDatabase();
+					Cursor cursor = sqLiteDatabase.rawQuery(
+							"select * from dictionary_list", null);
+					startManagingCursor(cursor);
+					OnlineListCursorAdapter onlineListCursorAdapter = new OnlineListCursorAdapter(
+							OnlineDictionaryActivity.this, cursor);
+					dictionaryList.setAdapter(onlineListCursorAdapter);
+					sqLiteDatabase.close();
+					break;
+				case Constants.DOWNLOAD_SUCCESS :
+					if (progressDialog != null) {
+						Toast.makeText(OnlineDictionaryActivity.this,
+								getString(R.string.progress_success),
+								Toast.LENGTH_LONG).show();
+					}
+					break;
+				case Constants.DOWNLOADING :
+					progressDialog = ProgressDialog.show(
+							OnlineDictionaryActivity.this,
+							getString(R.string.progress_downloading),
+							getString(R.string.progress_wait));
+					progressDialog.setCancelable(true);
+					break;
+				default :
+					break;
 			}
 		}
 	}
