@@ -2,8 +2,8 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="fill_parent"
     android:layout_height="60dp"
-    android:background="#f2f2f2"
-    android:descendantFocusability="blocksDescendants" >
+    android:background="@drawable/selector_new_words_item"
+    android:descendantFocusability="beforeDescendants" >
 
     <TextView
         android:id="@+id/item_dictionary_name"

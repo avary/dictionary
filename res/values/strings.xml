@@ -1,9 +1,8 @@
 <resources>
 
-    <string name="app_name">ViewPagerTest</string>
+    <string name="app_name">小熊词典</string>
     <string name="hello_world">Hello world!</string>
     <string name="menu_settings">设置</string>
-    <string name="title_activity_main">MainActivity</string>
     <string name="query_word">查词</string>
     <string name="words_list">生词本</string>
     <string name="query_word_id">1</string>
@@ -32,6 +31,6 @@
     <string name="downloading">正在下载</string>
     <string name="download_finished">已经下载完成</string>
     <string name="download_cancel">取消下载</string>
-    <string name="seting">设置</string>
+    <string name="setting">设置</string>
 
 </resources>

@@ -2,7 +2,7 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
-    android:background="#ffffff" >
+    android:background="@color/white" >
 
     <RelativeLayout
         android:id="@+id/top"
@@ -14,25 +14,25 @@
         android:paddingRight="10dp" >
 
         <TextView
-            android:id="@+id/textView1"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentLeft="true"
             android:layout_centerVertical="true"
-            android:text="@string/seting"
+            android:text="@string/setting"
             android:textAppearance="?android:attr/textAppearanceMedium"
             android:textColor="@color/lightblack" />
     </RelativeLayout>
 
-    <ListView
-        android:id="@+id/setting"
+    <com.mobeta.android.dslv.DragSortListView
+        android:id="@+id/drag_sort_list"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:layout_below="@+id/top"
         android:layout_centerHorizontal="true"
-        android:cacheColorHint="@android:color/transparent"
-        android:dividerHeight="1dip"
-        android:listSelector="@drawable/item_dictionary_selector" >
-    </ListView>
+        android:layout_centerVertical="true"
+        android:cacheColorHint="#00000000"
+        android:divider="@drawable/list_item_devider"
+        android:dividerHeight="1dp" >
+    </com.mobeta.android.dslv.DragSortListView>
 
 </RelativeLayout>

@@ -37,16 +37,48 @@
         android:id="@+id/scroll"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
+        android:layout_above="@+id/line"
         android:layout_below="@+id/search_box"
         android:layout_centerHorizontal="true" >
 
-        <LinearLayout
+        <FrameLayout
             android:id="@+id/dictionary_meaning_content"
             android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical" >
-        </LinearLayout>
+            android:layout_height="wrap_content" >
+        </FrameLayout>
     </ScrollView>
+
+    <ImageView
+        android:id="@+id/line"
+        android:layout_width="fill_parent"
+        android:layout_height="3dp"
+        android:layout_above="@+id/buttons"
+        android:layout_alignParentLeft="true"
+        android:background="@drawable/devide_line" />
+
+    <HorizontalScrollView
+        android:id="@+id/buttons"
+        android:layout_width="fill_parent"
+        android:layout_height="30dp"
+        android:layout_alignParentBottom="true"
+        android:layout_toLeftOf="@+id/add_word" >
+
+        <LinearLayout
+            android:id="@+id/button_container"
+            android:layout_width="wrap_content"
+            android:layout_height="fill_parent"
+            android:gravity="center_vertical"
+            android:orientation="horizontal" >
+        </LinearLayout>
+    </HorizontalScrollView>
+
+    <ImageView
+        android:id="@+id/add_word"
+        android:layout_width="wrap_content"
+        android:layout_height="30dp"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
+        android:layout_below="@+id/line"
+        android:background="@drawable/add_word_nor1" />
 
 </RelativeLayout>

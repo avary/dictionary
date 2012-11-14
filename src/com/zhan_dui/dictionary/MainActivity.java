@@ -2,10 +2,7 @@ package com.zhan_dui.dictionary;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-
-import javax.xml.parsers.ParserConfigurationException;
-
-import org.xml.sax.SAXException;
+import java.util.HashMap;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -20,18 +17,29 @@ import android.os.Handler;
 import android.os.Message;
 import android.support.v4.view.ViewPager;
 import android.support.v4.view.ViewPager.OnPageChangeListener;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.ViewGroup.LayoutParams;
+import android.view.animation.GridLayoutAnimationController;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.FrameLayout;
+import android.widget.GridView;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 
+import com.zhan_dui.dictionary.adapters.NewWordsCursorAdapter;
 import com.zhan_dui.dictionary.adapters.ViewPagerAdapter;
 import com.zhan_dui.dictionary.db.DictionaryDB;
+import com.zhan_dui.dictionary.db.QueryWords;
+import com.zhan_dui.dictionary.db.QueryWords.LayoutInformation;
 import com.zhan_dui.dictionary.handlers.UnzipHandler;
 import com.zhan_dui.dictionary.utils.Constants;
 import com.zhan_dui.dictionary.utils.UnzipFileInThread;
@@ -52,6 +60,11 @@ public class MainActivity extends Activity {
 	private final int line_ids[] = {R.id.line_btn_query_word,
 			R.id.line_btn_words_list};
 	private Context context;
+	private ImageView add_word;
+	// private ListView newWordsList;
+	private GridView newWordsGridView;
+	private ViewPager viewPager;
+	private WordClickListener wordClickListener;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -59,17 +72,24 @@ public class MainActivity extends Activity {
 		context = this;
 		setContentView(R.layout.activity_main);
 
-		final ViewPager viewPager = (ViewPager) findViewById(R.id.viewpager);
+		viewPager = (ViewPager) findViewById(R.id.viewpager);
 		viewPager.setOnPageChangeListener(new ViewPagerScroolListener());
+		wordClickListener = new WordClickListener();
 
 		View query_word_view = LayoutInflater.from(this).inflate(
 				R.layout.query_word, null);
 		query_word_view.findViewById(R.id.search).setOnClickListener(
 				new QueryWordButtonListener());
-		View view2 = LayoutInflater.from(this).inflate(R.layout.view2, null);
+		add_word = (ImageView) query_word_view.findViewById(R.id.add_word);
 
+		View new_words_list = LayoutInflater.from(this).inflate(
+				R.layout.new_words_list, null);
+		// newWordsList = (ListView) new_words_list
+		// .findViewById(R.id.new_words_list);
+		newWordsGridView = (GridView) new_words_list
+				.findViewById(R.id.new_words_list);
 		myAdapter.addPageView(query_word_view);
-		myAdapter.addPageView(view2);
+		myAdapter.addPageView(new_words_list);
 		viewPager.setAdapter(myAdapter);
 
 		btn_query_word = (Button) findViewById(R.id.btn_query_word);
@@ -98,6 +118,17 @@ public class MainActivity extends Activity {
 				line_btn_query_word.setBackgroundResource(R.color.gray);
 			}
 		});
+
+		DictionaryDB dictionaryDB = new DictionaryDB(context,
+				DictionaryDB.DB_NAME, null, DictionaryDB.DB_VERSION);
+		SQLiteDatabase sqLiteDatabase = dictionaryDB.getWritableDatabase();
+		Cursor cursor = sqLiteDatabase.rawQuery("select * from word", null);
+		// newWordsList
+		// .setAdapter(new NewWordsCursorAdapter(context, cursor, true));
+		newWordsGridView.setAdapter(new NewWordsCursorAdapter(context, cursor,
+				true, wordClickListener));
+		sqLiteDatabase.close();
+		add_word.setOnClickListener(new AddWordListener());
 
 		CheckWordExist();
 	}
@@ -140,6 +171,8 @@ public class MainActivity extends Activity {
 			case R.id.menu_online_dictionary :
 				startActivity(new Intent(this, OnlineDictionaryActivity.class));
 				break;
+			case R.id.menu_settings :
+				startActivity(new Intent(this, SetActivity.class));
 			default :
 				break;
 		}
@@ -161,42 +194,70 @@ public class MainActivity extends Activity {
 				return;
 			}
 
-			LinearLayout parentLayout = (LinearLayout) MainActivity.this
+			FrameLayout parentLayout = (FrameLayout) MainActivity.this
 					.findViewById(R.id.dictionary_meaning_content);
 			parentLayout.removeAllViewsInLayout();
+			LinearLayout namesLayout = (LinearLayout) MainActivity.this
+					.findViewById(R.id.button_container);
+			namesLayout.removeAllViews();
 
-			DictionaryDB dictionaryDB = new DictionaryDB(context,
-					DictionaryDB.DB_NAME, null, DictionaryDB.DB_VERSION);
-			SQLiteDatabase sqLiteDatabase = dictionaryDB.getReadableDatabase();
-			Cursor cursor = sqLiteDatabase
-					.rawQuery(
-							"select * from dictionary_list where dictionary_downloaded='1'",
-							null);
-			while (cursor.moveToNext()) {
-				String saveName = cursor.getString(cursor
-						.getColumnIndex("dictionary_save_name"));
-				String file_name = saveName.replace("zip", "dic");
-				String config_file_name = "config-" + file_name;
-				LinearLayout linearLayout = null;
-				try {
-					try {
-						linearLayout = (LinearLayout) dictionaryDB.queryWord(
-								MainActivity.this, word, file_name,
-								config_file_name);
-					} catch (IOException e) {
-						e.printStackTrace();
-					}
-				} catch (ParserConfigurationException e) {
-					e.printStackTrace();
-				} catch (SAXException e) {
-					e.printStackTrace();
+			new Thread(new QueryWords(context, new QueryHandler(parentLayout,
+					namesLayout), word)).start();
+		}
+
+	}
+	public class QueryHandler extends Handler {
+
+		private FrameLayout parentLayout;
+		private LinearLayout namesLayout;
+		private HashMap<String, LinearLayout> layouts = new HashMap<String, LinearLayout>();
+		private String currentDictionary = null;
+
+		public QueryHandler(FrameLayout parentLayout, LinearLayout namesLayout) {
+			super();
+			this.parentLayout = parentLayout;
+			this.namesLayout = namesLayout;
+		}
+
+		@SuppressLint("HandlerLeak")
+		@Override
+		public void handleMessage(Message msg) {
+			super.handleMessage(msg);
+			if (msg.what == QueryWords.QUERY_SUCCESS) {
+				final LayoutInformation layoutInformation = (LayoutInformation) msg.obj;
+				if (currentDictionary == null) {
+					parentLayout.addView(layoutInformation.contentLayout);
+					currentDictionary = layoutInformation.dictionaryName;
+					String word = layoutInformation.word;
+					add_word.setContentDescription(word);
 				}
-				parentLayout.addView(linearLayout);
+				TextView nameView = new TextView(context);
+
+				layouts.put(layoutInformation.dictionaryName,
+						layoutInformation.contentLayout);
+				LayoutParams layoutParams = new LayoutParams(
+						LayoutParams.WRAP_CONTENT, LayoutParams.FILL_PARENT);
+
+				nameView.setLayoutParams(layoutParams);
+				nameView.setPadding(5, 0, 5, 0);
+				nameView.setTextColor(getResources().getColor(
+						R.color.navigate_line_green));
+				nameView.setText(layoutInformation.dictionaryName);
+				nameView.setGravity(Gravity.CENTER);
+				nameView.setOnClickListener(new OnClickListener() {
+
+					@Override
+					public void onClick(View v) {
+						parentLayout.removeAllViews();
+						parentLayout.addView(layouts
+								.get(layoutInformation.dictionaryName));
+					}
+				});
+				namesLayout.addView(nameView);
+
 			}
-			sqLiteDatabase.close();
 		}
 	}
-
 	/**
 	 * 
 	 * @ClassName:MainActivity.java
@@ -212,6 +273,7 @@ public class MainActivity extends Activity {
 
 		@Override
 		public void onPageScrolled(int before, float arg1, int after) {
+
 		}
 
 		@Override
@@ -221,9 +283,72 @@ public class MainActivity extends Activity {
 			}
 			findViewById(line_ids[position]).setBackgroundResource(
 					R.color.navigate_line_green);
+
+			DictionaryDB dictionaryDB = new DictionaryDB(context,
+					DictionaryDB.DB_NAME, null, DictionaryDB.DB_VERSION);
+			SQLiteDatabase sqLiteDatabase = dictionaryDB.getWritableDatabase();
+			Cursor cursor = sqLiteDatabase.rawQuery("select * from word", null);
+			// newWordsList.setAdapter(new NewWordsCursorAdapter(context,
+			// cursor,
+			// true));
+			newWordsGridView.setAdapter(new NewWordsCursorAdapter(context,
+					cursor, true, wordClickListener));
+			sqLiteDatabase.close();
+		}
+	}
+
+	class AddWordListener implements OnClickListener {
+
+		@Override
+		public void onClick(View v) {
+			String contentDescription = (String) v.getContentDescription();
+			if (contentDescription != null) {
+				DictionaryDB dictionaryDB = new DictionaryDB(context,
+						DictionaryDB.DB_NAME, null, DictionaryDB.DB_VERSION);
+				int result = dictionaryDB.addWord(contentDescription);
+				switch (result) {
+					case DictionaryDB.WORD_EXSIST :
+						Toast.makeText(context, "单词已存在", Toast.LENGTH_SHORT)
+								.show();
+						break;
+					case DictionaryDB.WORD_ADDED :
+						Toast.makeText(context, "单词添加成功", Toast.LENGTH_SHORT)
+								.show();
+						break;
+					default :
+						break;
+				}
+			}
 		}
 
 	}
+	/**
+	 * 点生词时候的监听器
+	 * 
+	 * @Description:
+	 * @date 2012-11-13 下午2:37:48
+	 */
+	private class WordClickListener implements OnClickListener {
+
+		@Override
+		public void onClick(View v) {
+			String word = (String) v.getContentDescription();
+			viewPager.setCurrentItem(0);
+			line_btn_query_word
+					.setBackgroundResource(R.color.navigate_line_green);
+			line_btn_words_list.setBackgroundResource(R.color.gray);
+			FrameLayout parentLayout = (FrameLayout) MainActivity.this
+					.findViewById(R.id.dictionary_meaning_content);
+			parentLayout.removeAllViewsInLayout();
+			LinearLayout namesLayout = (LinearLayout) MainActivity.this
+					.findViewById(R.id.button_container);
+			namesLayout.removeAllViews();
+
+			new Thread(new QueryWords(context, new QueryHandler(parentLayout,
+					namesLayout), word)).start();
+		}
+
+	};
 
 	/**
 	 * 文件移动时候的Handler

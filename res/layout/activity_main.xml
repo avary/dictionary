@@ -19,7 +19,7 @@
             android:layout_height="wrap_content"
             android:layout_alignParentLeft="true"
             android:layout_centerVertical="true"
-            android:text="@string/dictionary_name"
+            android:text="@string/app_name"
             android:textAppearance="?android:attr/textAppearanceMedium"
             android:textColor="@color/lightblack" />
     </RelativeLayout>

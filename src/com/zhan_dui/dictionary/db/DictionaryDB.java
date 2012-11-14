@@ -11,6 +11,7 @@ import javax.xml.parsers.SAXParserFactory;
 
 import org.xml.sax.SAXException;
 
+import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -40,7 +41,7 @@ public class DictionaryDB extends SQLiteOpenHelper {
 			+ Constants.SAVE_DIRECTORY
 			+ "/";
 	private final Context context;
-	public final static int DB_VERSION = 2;
+	public final static int DB_VERSION = 3;
 	public final static String DB_NAME = "dictionary.sqlite";
 	public final static String DB_BASE_DIC = "dictionary_word.sqlite";
 
@@ -54,13 +55,58 @@ public class DictionaryDB extends SQLiteOpenHelper {
 
 	@Override
 	public void onCreate(SQLiteDatabase sqLiteDatabase) {
-		String createSql = "create table dictionary_list (_id INTEGER PRIMARY KEY AUTOINCREMENT,dictionary_name text,dictionary_size text,dictionary_url text,dictionary_save_name text,dictionary_downloaded INTEGER default 0,dictionary_show INTEGER default 0);";
+		String createSql = "create table if not exists dictionary_list (_id INTEGER PRIMARY KEY AUTOINCREMENT,dictionary_name text,dictionary_size text,dictionary_url text,dictionary_save_name text,dictionary_downloaded INTEGER default 0,dictionary_show INTEGER default 0,dictionary_order INTEDER);";
+		String createSql_words = "create table if not exists  word(_id INTEGER PRIMARY KEY AUTOINCREMENT,word text);";
 		sqLiteDatabase.execSQL(createSql);
+		sqLiteDatabase.execSQL(createSql_words);
 	}
 
 	@Override
 	public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
 
+	}
+
+	public static final int WORD_EXSIST = 1;
+	public static final int WORD_ADDED = 2;
+
+	/**
+	 * addWord 添加生词进生词本
+	 * 
+	 * @param word
+	 * @return
+	 */
+	public int addWord(String word) {
+		DictionaryDB dictionaryDB = new DictionaryDB(context,
+				DictionaryDB.DB_NAME, null, DB_VERSION);
+		SQLiteDatabase sqLiteDatabase = dictionaryDB.getWritableDatabase();
+		String[] whereArgs = {word};
+		Cursor cursor = sqLiteDatabase.query("word", null, "word=?", whereArgs,
+				null, null, null);
+		int result = 0;
+		if (cursor.getCount() == 0) {
+			ContentValues contentValues = new ContentValues();
+			contentValues.put("word", word);
+			sqLiteDatabase.insert("word", null, contentValues);
+			result = WORD_ADDED;
+		} else {
+			result = WORD_EXSIST;
+		}
+		sqLiteDatabase.close();
+		return result;
+	}
+
+	/**
+	 * deleteWord 丛生此表中删除某个单词
+	 * 
+	 * @param word
+	 */
+	public void deleteWord(String word) {
+		DictionaryDB dictionaryDB = new DictionaryDB(context,
+				DictionaryDB.DB_NAME, null, DB_VERSION);
+		SQLiteDatabase sqLiteDatabase = dictionaryDB.getWritableDatabase();
+		String sql = "delete from word where word='" + word + "'";
+		sqLiteDatabase.execSQL(sql);
+		sqLiteDatabase.close();
 	}
 
 	/**
@@ -91,12 +137,8 @@ public class DictionaryDB extends SQLiteOpenHelper {
 	private final String SIZE_SMALL = "<small>%s</small>";
 	private final String SIZE_LARGE = "<big>%s</big>";
 	private final String FONT = "<font color='%s'>%s</font>";
-	// private final String LI_WRAPPER = "<li>%s</li>";
-	// private final String UL_WRAPPER = "<ul>%s</ul>";
-	// private final String OL_WRAPPER = "<ol>%s</ol>";
 
 	private HashMap<String, DictionaryParseInfomation> cacheXMLInformation = new HashMap<String, DictionaryParseInfomation>();
-
 	/**
 	 * 查询单词，根据配置的XML文件查询
 	 * 

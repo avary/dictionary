@@ -124,7 +124,16 @@ public class OnlineDictionaryActivity extends Activity {
 			DictionaryDB dictionaryDB = new DictionaryDB(
 					OnlineDictionaryActivity.this, DictionaryDB.DB_NAME, null,
 					DictionaryDB.DB_VERSION);
+			SQLiteDatabase sqLiteDatabase = dictionaryDB.getWritableDatabase();
+
 			for (int i = 0; i < jsonArray.length(); i++) {
+
+				Cursor cursor = sqLiteDatabase.rawQuery(
+						"select count(*) from dictionary_list", null);
+				cursor.moveToFirst();
+				int dictionaryCount = cursor.getInt(cursor
+						.getColumnIndex("count(*)"));
+
 				jsonObject = jsonArray.getJSONObject(i);
 				name = jsonObject.getString("dictionary_name");
 				size = jsonObject.getString("dictionary_size");
@@ -132,29 +141,26 @@ public class OnlineDictionaryActivity extends Activity {
 				save_name = jsonObject.getString("dictionary_save_name");
 				String checkIfExsit = "select * from dictionary_list where `dictionary_name`='"
 						+ name + "'";
-				SQLiteDatabase sqLiteDatabase = dictionaryDB
-						.getWritableDatabase();
-				Cursor cursor = sqLiteDatabase.rawQuery(checkIfExsit, null);
+
+				cursor = sqLiteDatabase.rawQuery(checkIfExsit, null);
+				ContentValues contentValues = new ContentValues();
+				contentValues.put("dictionary_name", name);
+				contentValues.put("dictionary_size", size);
+				contentValues.put("dictionary_url", url);
+				contentValues.put("dictionary_save_name", save_name);
 				if (cursor.getCount() == 0) {
-					ContentValues contentValues = new ContentValues();
-					contentValues.put("dictionary_name", name);
-					contentValues.put("dictionary_size", size);
-					contentValues.put("dictionary_url", url);
-					contentValues.put("dictionary_save_name", save_name);
+					contentValues.put("dictionary_order", dictionaryCount);
 					sqLiteDatabase.insert("dictionary_list", null,
 							contentValues);
+				} else {
+					String[] args = {name};
+					sqLiteDatabase.update("dictionary_list", contentValues,
+							"dictionary_name=?", args);
 				}
-
-				sqLiteDatabase.close();
-
-				if (sqLiteDatabase != null && sqLiteDatabase.isOpen()) {
-					sqLiteDatabase.close();
-				}
-
 			}
+			sqLiteDatabase.close();
 
 		}
-
 		@Override
 		public void run() {
 			super.run();
