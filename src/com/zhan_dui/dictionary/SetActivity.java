@@ -5,7 +5,6 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
-import android.util.Log;
 
 import com.mobeta.android.dslv.DragSortController;
 import com.mobeta.android.dslv.DragSortListView;
@@ -54,7 +53,6 @@ public class SetActivity extends Activity {
 		@Override
 		public void drop(int from, int to) {
 
-			Log.i("order", "from:" + from + " to:" + to);
 
 			DictionaryDB dictionaryDB = new DictionaryDB(context,
 					DictionaryDB.DB_NAME, null, DictionaryDB.DB_VERSION);

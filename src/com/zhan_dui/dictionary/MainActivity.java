@@ -24,14 +24,12 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup.LayoutParams;
-import android.view.animation.GridLayoutAnimationController;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.GridView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -288,9 +286,6 @@ public class MainActivity extends Activity {
 					DictionaryDB.DB_NAME, null, DictionaryDB.DB_VERSION);
 			SQLiteDatabase sqLiteDatabase = dictionaryDB.getWritableDatabase();
 			Cursor cursor = sqLiteDatabase.rawQuery("select * from word", null);
-			// newWordsList.setAdapter(new NewWordsCursorAdapter(context,
-			// cursor,
-			// true));
 			newWordsGridView.setAdapter(new NewWordsCursorAdapter(context,
 					cursor, true, wordClickListener));
 			sqLiteDatabase.close();
@@ -343,11 +338,11 @@ public class MainActivity extends Activity {
 			LinearLayout namesLayout = (LinearLayout) MainActivity.this
 					.findViewById(R.id.button_container);
 			namesLayout.removeAllViews();
-
+			((EditText) MainActivity.this.findViewById(R.id.edt_search_word))
+					.setText(word);
 			new Thread(new QueryWords(context, new QueryHandler(parentLayout,
 					namesLayout), word)).start();
 		}
-
 	};
 
 	/**

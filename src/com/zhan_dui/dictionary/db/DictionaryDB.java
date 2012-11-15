@@ -173,7 +173,8 @@ public class DictionaryDB extends SQLiteOpenHelper {
 			dictionaryParseInfomation = dictionaryXMLHandler.getResults();
 			cacheXMLInformation.put(sqliteFileName, dictionaryParseInfomation);
 		}
-
+		
+		
 		SQLiteDatabase sqLiteDatabase = SQLiteDatabase.openDatabase(
 				Environment.getExternalStorageDirectory() + "/"
 						+ Constants.SAVE_DIRECTORY + "/" + sqliteFileName,

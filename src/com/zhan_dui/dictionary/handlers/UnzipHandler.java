@@ -28,7 +28,8 @@ public class UnzipHandler extends Handler {
 	public void handleMessage(Message msg) {
 		super.handleMessage(msg);
 		if (msg.what == Constants.UNZIPPING) {
-			progressDialog.setMessage(String.valueOf(msg.arg1 / 1024) + "KB");
+			progressDialog.setMessage("正在初始化移动，请稍后"
+					+ String.valueOf(msg.arg1 / 1024) + "KB");
 		} else if (msg.what == Constants.UNZIP_START) {
 			progressDialog = new ProgressDialog(context);
 			progressDialog.show();
