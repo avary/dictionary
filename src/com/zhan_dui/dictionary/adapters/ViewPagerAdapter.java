@@ -24,6 +24,15 @@ public class ViewPagerAdapter extends PagerAdapter {
 		((ViewPager) container).removeView(pageViews.get(position));
 	}
 
+	public void clear() {
+		pageViews.clear();
+	}
+
+	public void replaceItem(View replace, View toReplace) {
+		int replacePosition = pageViews.indexOf(replace);
+		pageViews.add(replacePosition, toReplace);
+		pageViews.remove(replacePosition + 1);
+	}
 	@Override
 	public int getCount() {
 		return pageViews.size();

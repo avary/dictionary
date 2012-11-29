@@ -33,29 +33,28 @@
             android:text="@string/search" />
     </LinearLayout>
 
-    <HorizontalScrollView
+    <ScrollView
         android:id="@+id/buttons"
         android:layout_width="30dp"
         android:layout_height="fill_parent"
-        android:layout_alignParentLeft="true"
+        android:layout_above="@+id/add_word"
+        android:layout_alignParentRight="true"
         android:layout_below="@+id/search_box" >
 
         <LinearLayout
             android:id="@+id/button_container"
             android:layout_width="30dp"
             android:layout_height="fill_parent"
-            android:layout_gravity="center_vertical"
-            android:gravity="center_horizontal"
             android:orientation="vertical" >
         </LinearLayout>
-    </HorizontalScrollView>
+    </ScrollView>
 
     <ImageView
         android:id="@+id/line"
         android:layout_width="3dp"
         android:layout_height="fill_parent"
         android:layout_below="@+id/search_box"
-        android:layout_toRightOf="@+id/buttons"
+        android:layout_toLeftOf="@+id/buttons"
         android:background="@drawable/devide_line" />
 
     <ScrollView
@@ -63,13 +62,29 @@
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
         android:layout_below="@+id/search_box"
-        android:layout_toRightOf="@+id/line" >
+        android:layout_toLeftOf="@+id/line" >
 
         <FrameLayout
             android:id="@+id/dictionary_meaning_content"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content" >
+
+            <com.zhan_dui.dictionary.custom.VerticalTextView
+                android:id="@+id/verticalTextView1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="柯林斯词典"
+                android:textColor="@color/white" />
         </FrameLayout>
     </ScrollView>
+
+    <ImageView
+        android:id="@+id/add_word"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
+        android:layout_marginRight="-8dp"
+        android:src="@drawable/add_word_nor1" />
 
 </RelativeLayout>

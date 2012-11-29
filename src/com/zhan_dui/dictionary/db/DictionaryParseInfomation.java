@@ -40,7 +40,7 @@ public class DictionaryParseInfomation {
 
 	public class TextArg {
 		public String textSize = "normal";
-		public String textColor;
+		public String textColor = "#000000";
 		public String action = null;
 		public String argContent;
 		public String textStyle = "normal";

@@ -22,7 +22,7 @@
             android:drawableRight="@drawable/search_cancel"
             android:hint="@string/search_word"
             android:singleLine="true"
-            android:textSize="15dp" />
+            android:textSize="15sp" />
 
         <Button
             android:id="@+id/search"
@@ -56,7 +56,7 @@
         android:layout_alignParentLeft="true"
         android:background="@drawable/devide_line" />
 
-    <HorizontalScrollView
+    <ScrollView
         android:id="@+id/buttons"
         android:layout_width="fill_parent"
         android:layout_height="30dp"
@@ -70,12 +70,12 @@
             android:gravity="center_vertical"
             android:orientation="horizontal" >
         </LinearLayout>
-    </HorizontalScrollView>
+    </ScrollView>
 
     <ImageView
         android:id="@+id/add_word"
         android:layout_width="wrap_content"
-        android:layout_height="30dp"
+        android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_alignParentRight="true"
         android:layout_below="@+id/line"

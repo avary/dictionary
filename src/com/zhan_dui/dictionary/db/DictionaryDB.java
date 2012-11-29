@@ -11,14 +11,25 @@ import javax.xml.parsers.SAXParserFactory;
 
 import org.xml.sax.SAXException;
 
+import android.annotation.SuppressLint;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteDatabase.CursorFactory;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.graphics.Color;
+import android.graphics.Typeface;
 import android.os.Environment;
-import android.text.Html;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.TextUtils;
+import android.text.style.AbsoluteSizeSpan;
+import android.text.style.CharacterStyle;
+import android.text.style.ForegroundColorSpan;
+import android.text.style.StyleSpan;
+import android.text.style.UnderlineSpan;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.View;
@@ -32,7 +43,9 @@ import com.zhan_dui.dictionary.db.DictionaryParseInfomation.EchoViews;
 import com.zhan_dui.dictionary.db.DictionaryParseInfomation.TextArg;
 import com.zhan_dui.dictionary.handlers.DictionaryXMLHandler;
 import com.zhan_dui.dictionary.utils.Constants;
+import com.zhan_dui.dictionary.utils.DisplayUtils;
 
+@SuppressLint("DefaultLocale")
 public class DictionaryDB extends SQLiteOpenHelper {
 
 	private final static String DB_PATH = Environment
@@ -46,11 +59,14 @@ public class DictionaryDB extends SQLiteOpenHelper {
 	public final static String DB_BASE_DIC = "dictionary_word.sqlite";
 
 	public final static String DB_DICTIONARY_LIST_NAME = "dictionary_list";
+	private SharedPreferences sharedPreferences;
 
 	public DictionaryDB(Context context, String name, CursorFactory factory,
 			int version) {
 		super(context, name, factory, version);
 		this.context = context;
+		sharedPreferences = context.getSharedPreferences(Constants.PREF_FIRST,
+				Context.MODE_PRIVATE);
 	}
 
 	@Override
@@ -131,13 +147,6 @@ public class DictionaryDB extends SQLiteOpenHelper {
 		return -1;
 	}
 
-	private final String BOLD = "<b>%s</b>";
-	private final String ITALIC = "<i>%s</i>";
-	private final String UNDERLINE = "<u>%s</u>";
-	private final String SIZE_SMALL = "<small>%s</small>";
-	private final String SIZE_LARGE = "<big>%s</big>";
-	private final String FONT = "<font color='%s'>%s</font>";
-
 	private HashMap<String, DictionaryParseInfomation> cacheXMLInformation = new HashMap<String, DictionaryParseInfomation>();
 	/**
 	 * 查询单词，根据配置的XML文件查询
@@ -173,8 +182,7 @@ public class DictionaryDB extends SQLiteOpenHelper {
 			dictionaryParseInfomation = dictionaryXMLHandler.getResults();
 			cacheXMLInformation.put(sqliteFileName, dictionaryParseInfomation);
 		}
-		
-		
+
 		SQLiteDatabase sqLiteDatabase = SQLiteDatabase.openDatabase(
 				Environment.getExternalStorageDirectory() + "/"
 						+ Constants.SAVE_DIRECTORY + "/" + sqliteFileName,
@@ -218,51 +226,96 @@ public class DictionaryDB extends SQLiteOpenHelper {
 							echoView.view_padding_right,
 							echoView.view_padding_bottom);
 
-					ArrayList<String> contents = new ArrayList<String>();
-
+					ArrayList<SpannableString> contents = new ArrayList<SpannableString>();
+					int left = 0, right = 0, top = 0, bottom = 0;
 					for (TextArg arg : echoView.sprintfArgs) {
+						left = DisplayUtils.dip2px(context,
+								arg.text_padding_left);
+						right = DisplayUtils.dip2px(context,
+								arg.text_padding_right);
+						top = DisplayUtils
+								.dip2px(context, arg.text_padding_top);
+						bottom = DisplayUtils.dip2px(context,
+								arg.text_padding_bottom);
+
 						String content = cursor.getString(cursor
 								.getColumnIndex(arg.argContent));
-
+						SpannableString spannableContentString = new SpannableString(
+								content);
 						if (arg.action != null) {
 							if (arg.action.equals("split")) {
 								// |||
 								String[] examples = content.split("\\|\\|\\|");
-								content = "";
+								content = "\n\n";
 								for (String example : examples) {
-									content += example + "<br/>";
+									content += example + "\n";
 								}
+								spannableContentString = new SpannableString(
+										content);
 							}
 						}
+						CharacterStyle characterStyle;
 
 						String textColor = arg.textColor;
 
-						if (textColor == null) {
-							textColor = "black";
-						}
+						characterStyle = new ForegroundColorSpan(
+								Color.parseColor(textColor));
 
-						content = String.format(FONT, textColor, content);
+						spannableContentString.setSpan(characterStyle, 0,
+								spannableContentString.length(),
+								Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
 
-						if (arg.textStyle.equalsIgnoreCase("bold")) {
-							content = String.format(BOLD, content);
-						} else if (arg.textStyle.equalsIgnoreCase("italic")) {
-							content = String.format(ITALIC, content);
-						} else if (arg.textStyle.equalsIgnoreCase("underline")) {
-							content = String.format(UNDERLINE, content);
-						}
+						int size = 0;
 
 						if (arg.textSize.equalsIgnoreCase("normal")) {
+							size = sharedPreferences.getInt("mediumSize",
+									Constants.DEFAULT_MEDIUM_SIZE);
 						} else if (arg.textSize.equalsIgnoreCase("small")) {
-							content = String.format(SIZE_SMALL, content);
+							size = sharedPreferences.getInt("smallSize",
+									Constants.DEFAULT_SMALL_SIZE);
 						} else if (arg.textSize.equalsIgnoreCase("large")) {
-							content = String.format(SIZE_LARGE, content);
+							size = sharedPreferences.getInt("largeSize",
+									Constants.DEFAULT_LARGE_SIZE);
 						}
-						contents.add(content);
+
+						size = DisplayUtils.dip2px(context, size);
+
+						characterStyle = new AbsoluteSizeSpan(size);
+						spannableContentString.setSpan(characterStyle, 0,
+								spannableContentString.length(),
+								Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+						if (arg.textStyle.equalsIgnoreCase("bold")) {
+							characterStyle = new StyleSpan(Typeface.BOLD);
+						} else if (arg.textStyle.equalsIgnoreCase("italic")) {
+							characterStyle = new StyleSpan(Typeface.ITALIC);
+						} else if (arg.textStyle.equalsIgnoreCase("underline")) {
+							characterStyle = new UnderlineSpan();
+						}
+
+						spannableContentString.setSpan(characterStyle, 0,
+								spannableContentString.length(),
+								Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+						contents.add(spannableContentString);
 					}
-					String textViewText = String.format(echoView.sprintfString,
-							contents.toArray());
-					textView.setText(Html.fromHtml(counter++ + "."
-							+ textViewText));
+					CharSequence resultContent = TextUtils.concat(contents
+							.toArray(new SpannableString[0]));
+					SpannableString leaderIndex = new SpannableString(counter++
+							+ ".");
+					leaderIndex.setSpan(
+							new ForegroundColorSpan(context.getResources()
+									.getColor(R.color.navigate_line_green)), 0,
+							leaderIndex.length(),
+							Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+					leaderIndex.setSpan(new StyleSpan(Typeface.BOLD), 0,
+							leaderIndex.length(),
+							Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+					resultContent = TextUtils
+							.concat(leaderIndex, resultContent);
+
+					textView.setText(resultContent);
+					textView.setPadding(left, top, right, bottom);
+
 					linearLayout.addView(textView);
 				}
 			}
@@ -271,7 +324,6 @@ public class DictionaryDB extends SQLiteOpenHelper {
 		sqLiteDatabase.close();
 		return linearLayout;
 	}
-
 	public View queryWord(String word) {
 		if (word.length() == 0) {
 			return null;

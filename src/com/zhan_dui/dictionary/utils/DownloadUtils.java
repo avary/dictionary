@@ -97,8 +97,9 @@ public class DownloadUtils {
 	public static final String ERROR_SD_CARD = "Œ¥ºÏ≤‚µΩSDø®";
 	public static final String ERROR_CANCEL_DOWNLOAD = "ƒ˙÷’÷π¡Àœ¬‘ÿ";
 
-	private static class DownloadAsync extends
-			AsyncTask<Void, Integer, Boolean> {
+	private static class DownloadAsync
+			extends
+				AsyncTask<Void, Integer, Boolean> {
 
 		String fileUrl, savePath;
 		DownloadUtils.DownloadUtilsInterface downloadBehavior;

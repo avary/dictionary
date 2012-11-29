@@ -36,50 +36,49 @@ public class DictionaryXMLHandler extends DefaultHandler {
 		if (data.trim().length() == 0) {
 			return;
 		}
-		if (currentFlag.equals("title")) {
+		if (currentFlag.equalsIgnoreCase("title")) {
 			dictionaryParseInfomation.title = data;
-		} else if (currentFlag.equals("queryword")) {
+		} else if (currentFlag.equalsIgnoreCase("queryword")) {
 			dictionaryParseInfomation.queryWords.add(data);
-		} else if (currentFlag.equals("sprintfstring")) {
+		} else if (currentFlag.equalsIgnoreCase("sprintfstring")) {
 			if (dictionaryParseInfomation.getLastOneEchoView().sprintfString == null)
 				dictionaryParseInfomation.getLastOneEchoView().sprintfString = data;
 			else {
 				dictionaryParseInfomation.getLastOneEchoView().sprintfString += data;
 			}
-
-		} else if (currentFlag.equals("viewtype")) {
+		} else if (currentFlag.equalsIgnoreCase("viewtype")) {
 			dictionaryParseInfomation.getLastOneEchoView().viewType = data;
-		} else if (currentFlag.equals("argcontent")) {
+		} else if (currentFlag.equalsIgnoreCase("argcontent")) {
 			dictionaryParseInfomation.getLastOneEchoView().getLastOneArg().argContent = data;
-		} else if (currentFlag.equals("textsize")) {
+		} else if (currentFlag.equalsIgnoreCase("textsize")) {
 			dictionaryParseInfomation.getLastOneEchoView().getLastOneArg().textSize = data;
-		} else if (currentFlag.equals("textcolor")) {
+		} else if (currentFlag.equalsIgnoreCase("textcolor")) {
 			dictionaryParseInfomation.getLastOneEchoView().getLastOneArg().textColor = data;
-		} else if (currentFlag.equals("text_padding_top")) {
+		} else if (currentFlag.equalsIgnoreCase("text_padding_top")) {
 			dictionaryParseInfomation.getLastOneEchoView().getLastOneArg().text_padding_top = Integer
 					.parseInt(data);
-		} else if (currentFlag.equals("text_padding_bottom")) {
+		} else if (currentFlag.equalsIgnoreCase("text_padding_bottom")) {
 			dictionaryParseInfomation.getLastOneEchoView().getLastOneArg().text_padding_bottom = Integer
 					.parseInt(data);
-		} else if (currentFlag.equals("text_padding_right")) {
+		} else if (currentFlag.equalsIgnoreCase("text_padding_right")) {
 			dictionaryParseInfomation.getLastOneEchoView().getLastOneArg().text_padding_right = Integer
 					.parseInt(data);
-		} else if (currentFlag.equals("text_padding_left")) {
+		} else if (currentFlag.equalsIgnoreCase("text_padding_left")) {
 			dictionaryParseInfomation.getLastOneEchoView().getLastOneArg().text_padding_left = Integer
 					.parseInt(data);
-		} else if (currentFlag.equals("view_padding_left")) {
+		} else if (currentFlag.equalsIgnoreCase("view_padding_left")) {
 			dictionaryParseInfomation.getLastOneEchoView().view_padding_left = Integer
 					.parseInt(data);
-		} else if (currentFlag.equals("view_padding_right")) {
+		} else if (currentFlag.equalsIgnoreCase("view_padding_right")) {
 			dictionaryParseInfomation.getLastOneEchoView().view_padding_right = Integer
 					.parseInt(data);
-		} else if (currentFlag.equals("view_padding_top")) {
+		} else if (currentFlag.equalsIgnoreCase("view_padding_top")) {
 			dictionaryParseInfomation.getLastOneEchoView().view_padding_top = Integer
 					.parseInt(data);
-		} else if (currentFlag.equals("view_padding_bottom")) {
+		} else if (currentFlag.equalsIgnoreCase("view_padding_bottom")) {
 			dictionaryParseInfomation.getLastOneEchoView().view_padding_bottom = Integer
 					.parseInt(data);
-		} else if (currentFlag.equals("textstyle")) {
+		} else if (currentFlag.equalsIgnoreCase("textstyle")) {
 			dictionaryParseInfomation.getLastOneEchoView().getLastOneArg().textStyle = data;
 		} else if (currentFlag.equalsIgnoreCase("action")) {
 			dictionaryParseInfomation.getLastOneEchoView().getLastOneArg().action = data;
@@ -93,9 +92,9 @@ public class DictionaryXMLHandler extends DefaultHandler {
 			Attributes attributes) throws SAXException {
 		super.startElement(uri, localName, qName, attributes);
 		currentFlag = localName;
-		if (localName.equals("view")) {
+		if (localName.equalsIgnoreCase("view")) {
 			dictionaryParseInfomation.addOneEchoView();
-		} else if (localName.equals("args")) {
+		} else if (localName.equalsIgnoreCase("args")) {
 			dictionaryParseInfomation.getLastOneEchoView().addOneArg();
 		}
 	}

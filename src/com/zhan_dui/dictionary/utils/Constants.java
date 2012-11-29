@@ -33,4 +33,8 @@ public class Constants {
 	public static final int UNZIP_START = 1;
 	public static final int UNZIP_FINISH = 2;
 
+	public static final int DEFAULT_SMALL_SIZE = 14;
+	public static final int DEFAULT_MEDIUM_SIZE = 19;
+	public static final int DEFAULT_LARGE_SIZE = 25;
+
 }
