@@ -22,7 +22,7 @@ public class UnzipUtils {
 		 * @param outputDirectory
 		 *            带解压目录
 		 */
-		public void beforeUnzip(String source, String outputDirectory);
+		public boolean beforeUnzip(String source, String outputDirectory);
 		/**
 		 * afterUnzip unzip结束时执行的函数 UI线程
 		 * 
@@ -81,20 +81,12 @@ public class UnzipUtils {
 	public static final String FILESTREAM_CANNOT_CLOSE = "文件流无法关闭";
 	public static final String ZIP_NEXT_POINT_ERROR = "无法定位到下一个解压点";
 	public static final String ABORT = "已经被用户取消";
+	public static final String BEFORE_TASK_STOP = "before函数结束了解压";
 
 	public void unzipFile(UnzipInterface unzipBehavior, String source,
 			String outputDirectory, Boolean rewrite) {
 		new UnzipTask(source, outputDirectory, unzipBehavior, rewrite)
 				.execute();
-	}
-
-	private boolean stop = false;
-
-	/**
-	 * stop 是否要取消解压操作
-	 */
-	public void stop() {
-		stop = true;
 	}
 
 	private class UnzipTask extends AsyncTask<Void, Integer, Boolean> {
@@ -104,6 +96,7 @@ public class UnzipUtils {
 		private UnzipInterface unzipBehavior;
 		private Boolean rewrite;
 		private String errorMsg = null;
+		private boolean stop = false;
 
 		public UnzipTask(String source, String outputDirectory,
 				UnzipInterface unzipBehavior, Boolean rewrite) {
@@ -117,11 +110,18 @@ public class UnzipUtils {
 		@Override
 		protected void onPreExecute() {
 			super.onPreExecute();
-			unzipBehavior.beforeUnzip(source, outputDirectory);
+			// 如果before的工作返回false则不开始解压
+			stop = !unzipBehavior.beforeUnzip(source, outputDirectory);
 		}
 
 		@Override
 		protected Boolean doInBackground(Void... params) {
+
+			if (stop) {
+				errorMsg = BEFORE_TASK_STOP;
+				return false;
+			}
+
 			unzipBehavior.beforeUnzipThread(source, outputDirectory);
 			// 创建解压目标目录
 

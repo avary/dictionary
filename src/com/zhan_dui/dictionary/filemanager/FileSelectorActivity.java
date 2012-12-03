@@ -21,18 +21,13 @@ package com.zhan_dui.dictionary.filemanager;
 import java.io.File;
 
 import android.app.AlertDialog;
-import android.app.AlertDialog.Builder;
 import android.app.ListActivity;
-import android.app.Notification;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.location.GpsStatus.NmeaListener;
-import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -43,7 +38,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.zhan_dui.dictionary.R;
-import com.zhan_dui.dictionary.utils.NotificationUtils;
+import com.zhan_dui.dictionary.utils.Constants;
 
 /**
  * This is the main activity. The activity that is presented to the user as the
@@ -156,20 +151,11 @@ public final class FileSelectorActivity extends ListActivity {
 			item_ext = "";
 		}
 
-		/*
-		 * If the user has multi-select on, we just need to record the file not
-		 * make an intent for it.
-		 */
-
 		if (file.isDirectory()) {
 			if (file.canRead()) {
 				mHandler.updateDirectory(mFileMag.getNextDir(item, false));
 				mPathLabel.setText(mFileMag.getCurrentDir());
 
-				/*
-				 * set back button switch to true (this will be better
-				 * implemented later)
-				 */
 				if (!mUseBackKey)
 					mUseBackKey = true;
 
@@ -191,21 +177,24 @@ public final class FileSelectorActivity extends ListActivity {
 							// TODO 添加解压离线词典
 							Toast.makeText(mContext, file.getPath(),
 									Toast.LENGTH_SHORT).show();
-							NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-							Notification notification = new Notification(
-									R.drawable.unzip, "开始解压", System
-											.currentTimeMillis());
-							notification.flags = Notification.FLAG_AUTO_CANCEL;
-							PendingIntent pendingIntent = PendingIntent
-									.getActivity(mContext, 0, null, 0);
-							notification.setLatestEventInfo(mContext, "", "刷新",
-									pendingIntent);
-							notificationManager.notify(0, notification);
+							UnzipNotificationCenter unzipNotificationCenter = new UnzipNotificationCenter(
+									mContext, FileSelectorActivity.class);
+
+							int id = unzipNotificationCenter
+									.prepareUnzipNotification(R.drawable.unzip,
+											R.string.start_unzip,
+											R.string.start_unzip,
+											R.string.unzip_tip);
+
+							unzipNotificationCenter.startUnzip(id,
+									file.getPath(),
+									Environment.getExternalStorageDirectory()
+											+ "/" + Constants.SAVE_DIRECTORY,
+									true);
 						}
 					});
 			builder.setNegativeButton(R.string.no,
 					new DialogInterface.OnClickListener() {
-
 						@Override
 						public void onClick(DialogInterface dialog, int which) {
 							dialog.dismiss();
@@ -244,11 +233,8 @@ public final class FileSelectorActivity extends ListActivity {
 		}
 	}
 
-	/*
-	 * (non-Javadoc) This will check if the user is at root directory. If so, if
-	 * they press back again, it will close the application.
-	 * 
-	 * @see android.app.Activity#onKeyDown(int, android.view.KeyEvent)
+	/**
+	 * 通过返回键来更新目录返回信息，并且通过返回键判断是否结束当前目录
 	 */
 	@Override
 	public boolean onKeyDown(int keycode, KeyEvent event) {
@@ -256,27 +242,16 @@ public final class FileSelectorActivity extends ListActivity {
 
 		if (keycode == KeyEvent.KEYCODE_BACK && mUseBackKey
 				&& !current.equals("/")) {
-			if (mHandler.isMultiSelected()) {
-				mTable.killMultiSelect(true);
-				Toast.makeText(FileSelectorActivity.this,
-						"Multi-select is now off", Toast.LENGTH_SHORT).show();
-			} else {
-				// stop updating thumbnail icons if its running
-				mHandler.updateDirectory(mFileMag.getPreviousDir());
-				mPathLabel.setText(mFileMag.getCurrentDir());
-			}
+
+			mHandler.updateDirectory(mFileMag.getPreviousDir());
+			mPathLabel.setText(mFileMag.getCurrentDir());
 			return true;
 
 		} else if (keycode == KeyEvent.KEYCODE_BACK && mUseBackKey
 				&& current.equals("/")) {
-			Toast.makeText(FileSelectorActivity.this,
-					"Press back again to quit.", Toast.LENGTH_SHORT).show();
 
-			if (mHandler.isMultiSelected()) {
-				mTable.killMultiSelect(true);
-				Toast.makeText(FileSelectorActivity.this,
-						"Multi-select is now off", Toast.LENGTH_SHORT).show();
-			}
+			Toast.makeText(FileSelectorActivity.this,
+					R.string.root_directory_tip, Toast.LENGTH_SHORT).show();
 
 			mUseBackKey = false;
 			mPathLabel.setText(mFileMag.getCurrentDir());
@@ -285,6 +260,7 @@ public final class FileSelectorActivity extends ListActivity {
 
 		} else if (keycode == KeyEvent.KEYCODE_BACK && !mUseBackKey
 				&& current.equals("/")) {
+
 			finish();
 
 			return false;

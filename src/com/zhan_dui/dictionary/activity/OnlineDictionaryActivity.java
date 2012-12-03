@@ -15,7 +15,6 @@ import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
@@ -193,7 +192,6 @@ public class OnlineDictionaryActivity extends Activity
 						.get(Constants.ONLINE_DICTIONARY_LIST_URL);
 
 				Message msg_success = new Message();
-				Log.i("json", jsonString);
 				ParseJson(jsonString);
 				msg_success.setTarget(onlineInfoHandler);
 				msg_success.what = Constants.DOWNLOAD_SUCCESS;

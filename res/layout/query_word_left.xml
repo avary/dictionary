@@ -41,9 +41,11 @@
         android:layout_above="@+id/add_word"
         android:layout_alignParentLeft="true"
         android:layout_below="@+id/search_box"
+
         android:scrollbars="vertical" >
 
         <LinearLayout
+            
             android:id="@+id/button_container"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"

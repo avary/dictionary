@@ -54,10 +54,9 @@ public class DictionaryDB extends SQLiteOpenHelper {
 			+ Constants.SAVE_DIRECTORY
 			+ "/";
 	private final Context context;
+	public final static String DB_NAME = "dictionary";
 	public final static int DB_VERSION = 3;
-	public final static String DB_NAME = "dictionary.sqlite";
 	public final static String DB_BASE_DIC = "dictionary_word.sqlite";
-
 	public final static String DB_DICTIONARY_LIST_NAME = "dictionary_list";
 	private SharedPreferences sharedPreferences;
 
@@ -71,7 +70,7 @@ public class DictionaryDB extends SQLiteOpenHelper {
 
 	@Override
 	public void onCreate(SQLiteDatabase sqLiteDatabase) {
-		String createSql = "create table if not exists dictionary_list (_id INTEGER PRIMARY KEY AUTOINCREMENT,dictionary_name text,dictionary_size text,dictionary_url text,dictionary_save_name text,dictionary_downloaded INTEGER default 0,dictionary_show INTEGER default 0,dictionary_order INTEDER);";
+		String createSql = "create table if not exists dictionary_list (_id INTEGER PRIMARY KEY AUTOINCREMENT,dictionary_name text,dictionary_size text,dictionary_url text,dictionary_save_name text,dictionary_downloaded INTEGER default 0,dictionary_show INTEGER default 0,dictionary_order INTEGER default 0);";
 		String createSql_words = "create table if not exists  word(_id INTEGER PRIMARY KEY AUTOINCREMENT,word text);";
 		sqLiteDatabase.execSQL(createSql);
 		sqLiteDatabase.execSQL(createSql_words);
@@ -146,7 +145,9 @@ public class DictionaryDB extends SQLiteOpenHelper {
 		}
 		return -1;
 	}
-
+	/**
+	 * 缓存XML文件信息，可以缩短查询时间
+	 */
 	private HashMap<String, DictionaryParseInfomation> cacheXMLInformation = new HashMap<String, DictionaryParseInfomation>();
 	/**
 	 * 查询单词，根据配置的XML文件查询

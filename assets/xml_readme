@@ -18,7 +18,7 @@
 		<args>//
 			<argcontent>数据内容</argcontent>
 			<textstyle>字体属性</textstyle>
-			<textsize>small</textsize>[small,medium,large]
+			<textsize>small</textsize>[small,normal,large]
 			<textcolor>#ff000格式对应的数据0</textcolor>
 			<text_padding_top></text_padding_top>
 		</args>

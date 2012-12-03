@@ -5,14 +5,15 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLConnection;
 
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.os.AsyncTask;
 import android.os.Environment;
+import android.util.Log;
 import android.widget.ProgressBar;
 
 import com.zhan_dui.dictionary.exceptions.SDCardUnmountedException;
@@ -180,8 +181,9 @@ public class DownloadUtils {
 			downloadBehavior.beforeThread(this.fileUrl);
 			File file = new File(savePath);
 			URL url = null;
+
 			InputStream fileInputStream = null;
-			URLConnection urlConnection = null;
+			HttpURLConnection httpURLConnection = null;
 			FileOutputStream fileOutputStream = null;
 			BufferedOutputStream bufferedOutputStream = null;
 			try {
@@ -193,9 +195,11 @@ public class DownloadUtils {
 					file.createNewFile();
 				}
 				url = new URL(fileUrl);
-				urlConnection = url.openConnection();
-				fileInputStream = urlConnection.getInputStream();
-				setFileSize(urlConnection.getContentLength());
+				Log.e("fileUrl", fileUrl);
+				httpURLConnection = (HttpURLConnection) url.openConnection();
+				httpURLConnection.setInstanceFollowRedirects(true);
+				fileInputStream = httpURLConnection.getInputStream();
+				setFileSize(httpURLConnection.getContentLength());
 				fileOutputStream = new FileOutputStream(file);
 				bufferedOutputStream = new BufferedOutputStream(
 						fileOutputStream);

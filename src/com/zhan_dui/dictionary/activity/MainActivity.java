@@ -118,12 +118,6 @@ public class MainActivity extends Activity {
 		CheckWordExist();
 	}
 
-	/**
-	 * 初始化生词列表
-	 */
-	public void initWordsList() {
-
-	}
 
 	/**
 	 * 首先检查是否有SD卡，如果没有SD卡，则提示退出

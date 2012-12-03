@@ -374,12 +374,14 @@ containing a value of this type.
         public static final int no_sd_alert=0x7f060031;
         public static final int ok=0x7f060014;
         public static final int permission=0x7f060043;
+        public static final int prepare_to_unzip=0x7f060046;
         public static final int progress_downloading=0x7f060009;
         public static final int progress_error=0x7f06000b;
         public static final int progress_success=0x7f06000c;
         public static final int progress_wait=0x7f06000a;
         public static final int query_word=0x7f060003;
         public static final int query_word_id=0x7f060005;
+        public static final int root_directory_tip=0x7f06004e;
         public static final int search=0x7f06001a;
         public static final int search_word=0x7f060019;
         public static final int setting=0x7f060023;
@@ -409,8 +411,16 @@ containing a value of this type.
         public static final int sort_size=0x7f060042;
         public static final int sort_type=0x7f060041;
         public static final int start_download=0x7f06000d;
+        public static final int start_unzip=0x7f060045;
+        public static final int still_wait=0x7f06004a;
         public static final int sure_this_directory=0x7f060044;
         public static final int to_download=0x7f060035;
+        public static final int unzip_already=0x7f06004d;
+        public static final int unzip_error=0x7f06004b;
+        public static final int unzip_finish=0x7f060048;
+        public static final int unzip_finish_start_deal=0x7f060049;
+        public static final int unzip_tip=0x7f06004c;
+        public static final int unzipping=0x7f060047;
         public static final int words_list=0x7f060004;
         public static final int words_list_id=0x7f060006;
     }

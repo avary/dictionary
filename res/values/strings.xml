@@ -69,5 +69,15 @@
     <string name="sort_size">大小</string>
     <string name="permission">由于权限问题，无法读取该目录</string>
     <string name="sure_this_directory">确定此文件？</string>
-	
+    <string name="start_unzip">开始解压</string>
+    <string name="prepare_to_unzip">准备解压</string>
+    <string name="unzipping">正在解压</string>
+    <string name="unzip_finish">解压完成</string>
+    <string name="unzip_finish_start_deal">解压结束，正在处理\.\.\.</string>
+    <string name="still_wait">依旧请耐心等待，这个操作会很快结束</string>
+    <string name="unzip_error">解压出错了</string>
+    <string name="unzip_tip">解压可能比较慢，请您稍等</string>
+    <string name="unzip_already">当前文件正在解压，请不要着急</string>
+    <string name="root_directory_tip">已经到达根目录了，再按Back键将结束选择</string>
+
 </resources>
